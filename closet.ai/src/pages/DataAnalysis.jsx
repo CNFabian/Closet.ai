@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import ClaudeWithFirestore from '../components/ClaudeWithFirestore';
-import '../styles/global.css'
 
-const DataAnalysisPage = () => {
+
+const DataAnalysis = () => {
   const [claudeResponse, setClaudeResponse] = useState(null);
   
   // Example prompt template for analyzing customer feedback
@@ -37,7 +37,7 @@ const DataAnalysisPage = () => {
   };
   
   return (
-    <div className="data-analysis-page">
+    <>
       <h1>Customer Feedback Analysis</h1>
       
       <ClaudeWithFirestore
@@ -54,8 +54,8 @@ const DataAnalysisPage = () => {
           <button>Share with Team</button>
         </div>
       )}
-    </div>
+  </>
   );
 };
 
-export default DataAnalysisPage;
+export default DataAnalysis;

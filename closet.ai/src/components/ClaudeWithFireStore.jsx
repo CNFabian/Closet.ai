@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { queryFirestoreForPrompt } from '../services/firebase/firestoreToClaude';
-import { sendPromptToClaude } from '../services/claude/claude';
+//import { queryFirestoreForPrompt } from '../services/firebase/firestoreToClaude';
+//import { sendPromptToClaude } from '../services/claude/claude';
 
 const ClaudeWithFirestore = ({ collection, conditions = [], promptTemplate, onResponse }) => {
   const [loading, setLoading] = useState(false);
