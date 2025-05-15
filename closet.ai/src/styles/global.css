@@ -5,6 +5,10 @@
   text-align: center;
 }
 
+header h1 {
+  color: orange
+}
+
 .data-analysis-page {
   display: flex;
 }

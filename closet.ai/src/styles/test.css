@@ -1,0 +1,15 @@
+.box {
+    display: flex;
+    gap:50px;
+    align-items: center;
+    align-content: center;
+    height: 500px;
+}
+
+.title {
+    display: flex;
+}
+
+.input-field {
+    display: flex;
+}
