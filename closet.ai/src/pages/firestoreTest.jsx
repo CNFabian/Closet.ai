@@ -9,6 +9,8 @@ const TestComponent = () => {
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  console.log("All env vars:", import.meta.env);
+console.log("API Key:", import.meta.env.VITE_GEMINI_API_KEY);
 
   const handleClick = async () => {
     const input = document.getElementById('ingredient-input');

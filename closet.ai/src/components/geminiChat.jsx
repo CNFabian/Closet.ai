@@ -41,7 +41,7 @@ function GeminiChat() {
       {response && (
         <div className="response">
           <h2>Gemini's Response:</h2>
-          <p>{response}</p>
+          <p>{response.text}</p>
         </div>
       )}
     </div>
