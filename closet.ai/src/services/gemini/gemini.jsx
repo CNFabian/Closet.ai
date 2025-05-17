@@ -4,12 +4,9 @@ import {
   createPartFromUri,
 } from "@google/genai";
 
-const ingredientNames = [];
-
-
 const API_KEY = "AIzaSyCJ6kuk5xH5XN1MWToXk7KKBDTIrB9_Xjk";
 const systemInstruction = `
-I have these ingredients in my kitchen: ${ingredientNames}.
+I have these ingredients in my kitchen.
 Reference these ingredients whenever you are asked to make a recipe. For every recipe that you generate keep the structure as follows.
 IMPORTANT: Respond with ONLY valid JSON referencing the exact structure specified below without any introduction or explanation text before or after:
 {
@@ -63,7 +60,6 @@ IMPORTANT INSTRUCTION GUIDELINES:
 
 Return EXACTLY this structure with no extra text.`;
 
-
 const genAI = new GoogleGenAI({apiKey: API_KEY});
 const modelName = "gemini-2.0-flash-001";
 
@@ -89,24 +85,45 @@ export const geminiService = {
     }
   },
 
-  async createCache(systemInstruction) {
-    const cache = await genAI.caches.create({
-      model: modelName,
-      config: {
-        contents: createUserContent(createPartFromUri(doc.uri, doc.mimeType)),
-        systemInstruction: systemInstruction
-      }
-    })
+  // Create a cache with system instructions for ingredients
+  async createIngredientsCache(ingredientsList) {
+    try {
+      // Format ingredients into a string
+      const ingredientsText = ingredientsList
+        .map(ingredient => ingredient.name)
+        .join(", ");
+      
+      // Create a custom system instruction with the ingredients
+      const customInstruction = systemInstruction.replace(
+        "I have these ingredients in my kitchen.", 
+        `I have these ingredients in my kitchen: ${ingredientsText}.`
+      );
+      
+      // Create the cache with the user's ingredients
+      const cache = await genAI.caches.create({
+        model: modelName,
+        config: {
+          systemInstruction: customInstruction
+        }
+      });
+      
+      return cache;
+    } catch (error) {
+      console.error('Error creating cache:', error);
+      throw error;
+    }
   },
   
-  // For text-only generation
-  async generateContent(prompt) {
+  // For text-only generation with ingredients
+  async generateContent(prompt, ingredients = []) {
     try {
+      // Generate content using the provided prompt
       const response = await genAI.models.generateContent({ 
         model: modelName,
         contents: prompt
       });
-      return response;
+      
+      return response.response;
     } catch (error) {
       console.error('Error generating content:', error);
       throw error;

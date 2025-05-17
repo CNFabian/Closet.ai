@@ -1,18 +1,14 @@
 import { useState } from 'react'
 import '../styles/test.css'
 import {db} from '../services/firebase/config'
-import {addDocument,
-        getCollection} from '../services/firebase/firestore'
-import { collection } from 'firebase/firestore';
+import {addDocument} from '../services/firebase/firestore'
 
-const TestComponent = () => {
-  const [count, setCount] = useState(0);
+const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   console.log("All env vars:", import.meta.env);
   console.log("API Key:", import.meta.env.VITE_GEMINI_API_KEY);
   const collectionName = "ingredients"
-
 
   const handleClick = async () => {
     const input = document.getElementById('ingredient-input');
@@ -22,27 +18,22 @@ const TestComponent = () => {
       setMessage('Please enter an ingredient');
       return;
     }
+    setLoading(true);
+    setMessage('');
+   
     try {
-      setLoading(true);
-      addDocument(collectionName, input.value);
-      
+      await addDocument(collectionName, input.value);
+      // Call the updateIngredients function to refresh the ingredients
+      if (updateIngredients) {
+        await updateIngredients();
+      }
+      setMessage('Ingredient added successfully!');
     } catch (error){
       console.error("Error adding document: ", error);
       setMessage('Error adding ingredient. Please try again.');
     } finally {
       setLoading(false);
-      setMessage('');
       input.value = ''; // Clear the input
-    }
-    
-  };
-
-  const saveIngredients = async () => {
-    try {
-      const ingredients = getCollection(collectionName)
-      console.log(ingredients)
-    } catch (error) {
-      console.error(error)
     }
   };
   
@@ -63,14 +54,29 @@ const TestComponent = () => {
       >
         {loading ? 'Submitting...' : 'Submit'}
       </button>
-
-      <button
-        onClick={saveIngredients}
-        >
-          Save
-        </button>
       
       {message && <p className="message">{message}</p>}
+      
+      {/* Display cached ingredients */}
+      <div className="cached-ingredients">
+        <h2>Your Ingredients:</h2>
+        {cachedIngredients.length > 0 ? (
+          <ul>
+            {cachedIngredients.map((ingredient, index) => (
+              <li key={`ingredient-${ingredient.id || index}`}>
+                {ingredient.name}
+                {ingredient.createdAt && ingredient.createdAt.toDate ? (
+                  <span className="timestamp">
+                    {" "}(added: {new Date(ingredient.createdAt.toDate()).toLocaleString()})
+                  </span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>No ingredients found.</p>
+        )}
+      </div>
     </div>
   );
 };
