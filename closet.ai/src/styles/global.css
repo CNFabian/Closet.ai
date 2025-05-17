@@ -52,3 +52,302 @@ header h1 {
 .read-the-docs {
   color: #888;
 }
+
+/* Add this to your CSS file */
+.gemini-chat {
+  max-width: 800px;
+  color: orange;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+.ingredients-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 15px 0;
+  justify-content: center;
+}
+
+.ingredient-tag {
+  background-color: #f0f5ff;
+  border: 1px solid #d0d9f0;
+  border-radius: 16px;
+  padding: 4px 12px;
+  font-size: 0.9rem;
+}
+
+.temperature-control {
+  margin: 15px 0;
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+}
+
+.temperature-control label {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.temperature-control input[type="range"] {
+  margin: 10px 0;
+}
+
+.error-message {
+  color: #d32f2f;
+  background-color: #ffebee;
+  padding: 10px;
+  margin: 15px 0;
+  border-radius: 4px;
+}
+
+.step {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.meal-type-selection form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.meal-type-selection input {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.recipe-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.recipe-option {
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 12px;
+  text-align: left;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.recipe-option:hover {
+  background-color: #e0e0e0;
+}
+
+/* Recipe Details Styling */
+.recipe-details h2 {
+  color: #2c3e50;
+  margin-bottom: 10px;
+  font-size: 1.8rem;
+}
+
+.recipe-description {
+  font-style: italic;
+  color: #555;
+  margin: 15px 0;
+  line-height: 1.5;
+}
+
+.recipe-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 20px 0;
+  background-color: #f9f9f9;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.meta-label {
+  font-weight: bold;
+  color: #555;
+  font-size: 0.85rem;
+}
+
+.recipe-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 15px 0;
+}
+
+.tag {
+  background-color: #2c3e50;
+  color: white;
+  border-radius: 16px;
+  padding: 3px 10px;
+  font-size: 0.8rem;
+}
+
+.ingredients-list.detailed {
+  display: block;
+  margin: 15px 0;
+}
+
+.ingredient-item {
+  margin-bottom: 8px;
+  list-style-type: disc;
+  margin-left: 20px;
+}
+
+.ingredient-quantity {
+  font-weight: bold;
+}
+
+/* Step-by-Step Card Styling */
+.step-by-step-container {
+  margin: 20px 0;
+}
+
+.instruction-card {
+  background-color: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.instruction-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.step-number {
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: #2c3e50;
+}
+
+.step-duration {
+  background-color: #f0f5ff;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.instruction-text {
+  line-height: 1.6;
+  margin-bottom: 15px;
+}
+
+.instruction-tip {
+  background-color: #fff9e6;
+  padding: 10px;
+  border-left: 3px solid #ffd54f;
+  margin: 15px 0;
+}
+
+.tip-label {
+  font-weight: bold;
+  color: #f57c00;
+}
+
+.instruction-meta {
+  margin-top: 15px;
+  font-size: 0.9rem;
+}
+
+.instruction-ingredients,
+.instruction-equipment {
+  margin-bottom: 10px;
+}
+
+.step-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+
+.nav-button {
+  background-color: #2c3e50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 15px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.nav-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.nav-button:hover:not(:disabled) {
+  background-color: #1a252f;
+}
+
+.step-indicator {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* Navigation Buttons */
+.navigation-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.back-button, 
+.restart-button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.back-button {
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+}
+
+.restart-button {
+  background-color: #2c3e50;
+  color: white;
+  border: none;
+}
+
+/* Recipe Complete Screen */
+.recipe-complete {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.recipe-complete h2 {
+  color: #2c3e50;
+  margin-bottom: 15px;
+}
+
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+  font-style: italic;
+  color: #666;
+}
