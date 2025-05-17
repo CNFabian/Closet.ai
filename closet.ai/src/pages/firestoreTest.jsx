@@ -1,16 +1,16 @@
 import { useState } from 'react'
 import '../styles/test.css'
 import {db} from '../services/firebase/config'
-import {collection,
-        addDoc,
-        Timestamp} from 'firebase/firestore'
+import {addDocument} from '../services/firebase/firestore'
+
 
 const TestComponent = () => {
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   console.log("All env vars:", import.meta.env);
-console.log("API Key:", import.meta.env.VITE_GEMINI_API_KEY);
+  console.log("API Key:", import.meta.env.VITE_GEMINI_API_KEY);
+  const collectionName = "ingredients"
 
   const handleClick = async () => {
     const input = document.getElementById('ingredient-input');
@@ -20,26 +20,21 @@ console.log("API Key:", import.meta.env.VITE_GEMINI_API_KEY);
       setMessage('Please enter an ingredient');
       return;
     }
-    
     setLoading(true);
     setMessage('');
-    
+   
     try {
-      // Add a new document to the "ingredients" collection
-      const docRef = await addDoc(collection(db, "ingredients"), {
-        name: ingredientValue,
-        createdAt: Timestamp.now()
-      });
+      addDocument(collectionName, input.value);
       
-      console.log("Document written with ID: ", docRef.id);
-      setMessage('Ingredient added successfully!');
-      input.value = ''; // Clear the input
-    } catch (error) {
+    } catch (error){
       console.error("Error adding document: ", error);
       setMessage('Error adding ingredient. Please try again.');
     } finally {
       setLoading(false);
+      input.value = ''; // Clear the input
     }
+    
+    
   };
   
   return (

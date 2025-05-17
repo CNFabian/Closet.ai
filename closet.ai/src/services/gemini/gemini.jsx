@@ -4,6 +4,9 @@ import {
   createPartFromUri,
 } from "@google/genai";
 
+const ingredientNames = [];
+
+
 const API_KEY = "AIzaSyCJ6kuk5xH5XN1MWToXk7KKBDTIrB9_Xjk";
 const systemInstruction = `
 I have these ingredients in my kitchen: ${ingredientNames}.
@@ -65,7 +68,7 @@ const genAI = new GoogleGenAI({apiKey: API_KEY});
 const modelName = "gemini-2.0-flash-001";
 
 function updateCache(cache) {
-  //
+  // use to extend cache lifetime
 }
 
 // Create a reusable service
