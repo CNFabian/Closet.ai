@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import '../styles/test.css'
 import {db} from '../services/firebase/config'
-import {addDocument} from '../services/firebase/firestore'
-
+import {addDocument,
+        getCollection} from '../services/firebase/firestore'
+import { collection } from 'firebase/firestore';
 
 const TestComponent = () => {
   const [count, setCount] = useState(0);
@@ -12,6 +13,7 @@ const TestComponent = () => {
   console.log("API Key:", import.meta.env.VITE_GEMINI_API_KEY);
   const collectionName = "ingredients"
 
+
   const handleClick = async () => {
     const input = document.getElementById('ingredient-input');
     const ingredientValue = input.value.trim();
@@ -20,10 +22,8 @@ const TestComponent = () => {
       setMessage('Please enter an ingredient');
       return;
     }
-    setLoading(true);
-    setMessage('');
-   
     try {
+      setLoading(true);
       addDocument(collectionName, input.value);
       
     } catch (error){
@@ -31,10 +31,19 @@ const TestComponent = () => {
       setMessage('Error adding ingredient. Please try again.');
     } finally {
       setLoading(false);
+      setMessage('');
       input.value = ''; // Clear the input
     }
     
-    
+  };
+
+  const saveIngredients = async () => {
+    try {
+      const ingredients = getCollection(collectionName)
+      console.log(ingredients)
+    } catch (error) {
+      console.error(error)
+    }
   };
   
   return (
@@ -54,6 +63,12 @@ const TestComponent = () => {
       >
         {loading ? 'Submitting...' : 'Submit'}
       </button>
+
+      <button
+        onClick={saveIngredients}
+        >
+          Save
+        </button>
       
       {message && <p className="message">{message}</p>}
     </div>

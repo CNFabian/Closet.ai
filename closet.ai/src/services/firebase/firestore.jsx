@@ -13,49 +13,6 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from './config';
-import fs from 'fs';
-import path from 'path';
-
-  // Save a collection to a JSON file (Node.js environment)
-  export const saveCollectionToJsonFile = async (collectionName, filePath = null) => {
-    try {
-      // Use the existing getCollection function to get all documents
-      const data = await getCollection(collectionName);
-      
-      // Convert data to a JSON string with pretty formatting
-      const jsonString = JSON.stringify(data, null, 2);
-      
-      // Determine the file path
-      const outputPath = filePath || path.join(process.cwd(), `${collectionName}.json`);
-      
-      // Ensure the directory exists
-      const directory = path.dirname(outputPath);
-      if (!fs.existsSync(directory)) {
-        fs.mkdirSync(directory, { recursive: true });
-      }
-      
-      // Write the file
-      fs.writeFileSync(outputPath, jsonString);
-      
-      console.log(`Collection saved to ${outputPath}`);
-      return { success: true, filePath: outputPath };
-    } catch (error) {
-      console.error('Error saving collection to file:', error);
-      throw error;
-    }
-  };
-
-  // Get collection as JSON object without saving to file
-export const getCollectionAsJson = async (collectionName) => {
-  try {
-    // Use the existing getCollection function to get all documents
-    const data = await getCollection(collectionName);
-    return data;
-  } catch (error) {
-    console.error('Error getting collection as JSON:', error);
-    throw error;
-  }
-};
   
   // Add a document to a collection
   export const addDocument = async (collectionName, data) => {
@@ -88,14 +45,17 @@ export const getCollectionAsJson = async (collectionName) => {
   
   // Get all documents from a collection
   export const getCollection = async (collectionName) => {
+    const array = [];
     try {
       const querySnapshot = await getDocs(collection(db, collectionName));
-      return querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      querySnapshot.forEach((doc) => {
+        console.log(doc.id, " => ", doc.data());
+        array.push(doc.data())
+    });
     } catch (error) {
       throw error;
+    } finally {
+      return array
     }
   };
   
