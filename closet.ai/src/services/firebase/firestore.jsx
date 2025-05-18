@@ -13,6 +13,36 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from './config';
+
+// Save a recipe to the savedRecipes collection
+export const saveRecipe = async (recipeData) => {
+  try {
+    const docRef = await addDoc(collection(db, 'savedRecipes'), {
+      ...recipeData,
+      savedAt: Timestamp.now()
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error saving recipe:', error);
+    throw error;
+  }
+};
+
+// Get saved recipes
+export const getSavedRecipes = async () => {
+  try {
+    const querySnapshot = await getDocs(
+      query(collection(db, 'savedRecipes'), orderBy('savedAt', 'desc'))
+    );
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting saved recipes:', error);
+    throw error;
+  }
+};
   
   // Add a document to a collection
   export const addDocument = async (collectionName, data) => {

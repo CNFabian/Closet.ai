@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { geminiService } from '../services/gemini/gemini';
-
+import { saveRecipe } from '../services/firebase/firestore';
 // Steps in the recipe generation process
 const STEPS = {
   SELECT_MEAL_TYPE: 0,
@@ -18,12 +18,51 @@ function GeminiChat({ ingredients = [] }) {
   const [selectedRecipe, setSelectedRecipe] = useState('');
   const [recipeData, setRecipeData] = useState(null);
   const [currentInstructionIndex, setCurrentInstructionIndex] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState(''); 
   
   // UI states
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [temperature, setTemperature] = useState(0.7);
   const [rawResponse, setRawResponse] = useState('');  // For debugging
+
+  // Add this function to handle saving recipes
+const handleSaveRecipe = async () => {
+  if (!recipeData) return;
+  
+  setIsSaving(true);
+  setSaveMessage('');
+  
+  try {
+    // Remove any non-serializable content or functions
+    const recipeToSave = {
+      name: recipeData.name,
+      description: recipeData.description,
+      prepTime: recipeData.prepTime,
+      cookTime: recipeData.cookTime,
+      totalTime: recipeData.totalTime,
+      servings: recipeData.servings,
+      difficulty: recipeData.difficulty,
+      ingredients: recipeData.ingredients,
+      instructions: recipeData.instructions,
+      tags: recipeData.tags || []
+    };
+    
+    await saveRecipe(recipeToSave);
+    setSaveMessage('Recipe saved successfully!');
+  } catch (error) {
+    console.error('Error saving recipe:', error);
+    setSaveMessage('Failed to save recipe. Please try again.');
+  } finally {
+    setIsSaving(false);
+    
+    // Clear message after 3 seconds
+    setTimeout(() => {
+      setSaveMessage('');
+    }, 3000);
+  }
+};
 
   // Parse recipe suggestions into an array of names
   const parseRecipeSuggestions = (text) => {
@@ -88,14 +127,39 @@ function GeminiChat({ ingredients = [] }) {
       }
       
       // Check if we have parsed JSON
-      if (result.json && result.json.recipe) {
-        setRecipeData(result.json.recipe);
-        setCurrentStep(STEPS.RECIPE_DETAILS);
-        setCurrentInstructionIndex(0); // Reset to first instruction
-      } else {
-        // We didn't get valid JSON, show an error
-        throw new Error('Failed to get recipe details in the correct format. Please try again.');
+    if (result.json && result.json.recipe) {
+      // Process the ingredients to ensure proper formatting
+      if (result.json.recipe.ingredients && Array.isArray(result.json.recipe.ingredients)) {
+        result.json.recipe.ingredients = result.json.recipe.ingredients.map(ingredient => {
+          // If the name has formatting like "**1 cup**Rice", fix it
+          if (typeof ingredient.name === 'string') {
+            // Remove any markdown-style bold formatting
+            let name = ingredient.name.replace(/\*\*/g, '');
+            
+            // Check if name starts with numbers and units that should be extracted
+            const unitMatch = name.match(/^(\d+(\.\d+)?)\s*(cup|cups|tablespoon|tablespoons|tbsp|teaspoon|teaspoons|tsp|oz|ounce|ounces|g|gram|grams|lb|pound|pounds)\s+(.+)$/i);
+            
+            if (unitMatch) {
+              // If we find embedded quantities and units, extract them
+              return {
+                ...ingredient,
+                quantity: parseFloat(unitMatch[1]) || ingredient.quantity,
+                unit: unitMatch[3] || ingredient.unit,
+                name: unitMatch[4] || ingredient.name
+              };
+            }
+          }
+          return ingredient;
+        });
       }
+      
+      setRecipeData(result.json.recipe);
+      setCurrentStep(STEPS.RECIPE_DETAILS);
+      setCurrentInstructionIndex(0);
+    } else {
+      // We didn't get valid JSON, show an error
+      throw new Error('Failed to get recipe details in the correct format. Please try again.');
+    }
     } catch (error) {
       console.error('Error getting recipe details:', error);
       setError(error.message || 'Failed to get recipe details. Please try again.');
@@ -263,7 +327,10 @@ function GeminiChat({ ingredients = [] }) {
             <ul className="ingredients-list detailed">
               {recipeData.ingredients.map((ingredient, index) => (
                 <li key={index} className="ingredient-item">
-                  <span className="ingredient-quantity">{ingredient.quantity} {ingredient.unit}</span>
+                  <span className="ingredient-quantity">
+                    {ingredient.quantity} {ingredient.unit}
+                  </span>
+                  {' '}{/* Explicitly add a space */}
                   <span className="ingredient-name">{ingredient.name}</span>
                   {ingredient.preparation && (
                     <span className="ingredient-prep">, {ingredient.preparation}</span>
@@ -294,7 +361,7 @@ function GeminiChat({ ingredients = [] }) {
                   {recipeData.instructions[currentInstructionIndex].ingredients && 
                    recipeData.instructions[currentInstructionIndex].ingredients.length > 0 && (
                     <div className="instruction-ingredients">
-                      <span className="meta-label">Ingredients:</span>
+                      <span className="meta-label">Ingredients: </span>
                       <span className="meta-value">{recipeData.instructions[currentInstructionIndex].ingredients.join(', ')}</span>
                     </div>
                   )}
@@ -302,7 +369,7 @@ function GeminiChat({ ingredients = [] }) {
                   {recipeData.instructions[currentInstructionIndex].equipment && 
                    recipeData.instructions[currentInstructionIndex].equipment.length > 0 && (
                     <div className="instruction-equipment">
-                      <span className="meta-label">Equipment:</span>
+                      <span className="meta-label">Equipment: </span>
                       <span className="meta-value">{recipeData.instructions[currentInstructionIndex].equipment.join(', ')}</span>
                     </div>
                   )}
@@ -333,14 +400,28 @@ function GeminiChat({ ingredients = [] }) {
             </div>
           </div>
           
-          <div className="navigation-buttons">
-            <button className="back-button" onClick={handleBack} disabled={loading}>
-              Back to Recipes
-            </button>
-            <button className="restart-button" onClick={handleRestart} disabled={loading}>
-              Start Over
-            </button>
-          </div>
+      <div className="navigation-buttons">
+        <button className="back-button" onClick={handleBack} disabled={loading}>
+          Back to Recipes
+        </button>
+        <button 
+          className="save-button" 
+          onClick={handleSaveRecipe} 
+          disabled={isSaving || loading}
+        >
+          {isSaving ? 'Saving...' : 'Save Recipe'}
+        </button>
+        <button className="restart-button" onClick={handleRestart} disabled={loading}>
+          Start Over
+        </button>
+      </div>
+
+      {/* Add this message display */}
+      {saveMessage && (
+        <div className={`save-message ${saveMessage.includes('Failed') ? 'error' : 'success'}`}>
+          {saveMessage}
+        </div>
+      )}
         </div>
       )}
       
