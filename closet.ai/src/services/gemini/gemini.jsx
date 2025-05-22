@@ -4,8 +4,14 @@ import {
 
 const API_KEY = "AIzaSyCJ6kuk5xH5XN1MWToXk7KKBDTIrB9_Xjk";
 const systemInstruction = `
-I have these ingredients in my kitchen.
-Reference these ingredients whenever you are asked to make a recipe. For every recipe that you generate keep the structure as follows.
+You are a chef who specializes in creating recipes based on available ingredients and their quantities.
+CRITICAL RULES:
+1. NEVER suggest using more of any ingredient than is available in the pantry
+2. Always check ingredient quantities before suggesting recipes
+3. Adjust recipe servings to match available ingredient quantities
+4. If there's not enough of a key ingredient, suggest substitutions or smaller portions
+
+For every recipe that you generate keep the structure as follows.
 IMPORTANT: Respond with ONLY valid JSON referencing the exact structure specified below without any introduction or explanation text before or after:
 {
   "recipe": {
@@ -32,17 +38,10 @@ IMPORTANT: Respond with ONLY valid JSON referencing the exact structure specifie
         "tip": "Optional helpful tip for this step",
         "ingredients": ["ingredient1", "ingredient2"],
         "equipment": ["equipment1", "equipment2"]
-      },
-      {
-        "stepNumber": 2,
-        "instruction": "Full instruction text for step 2",
-        "duration": 8,
-        "tip": "Optional helpful tip for this step",
-        "ingredients": ["ingredient1", "ingredient3"],
-        "equipment": ["equipment3"]
       }
     ],
-    "tags": ["quick", "vegetarian", "italian", etc.]
+    "tags": ["quick", "vegetarian", "italian", etc.],
+    "actualYield": "Actual servings based on available ingredients"
   }
 }
 
@@ -55,70 +54,69 @@ IMPORTANT INSTRUCTION GUIDELINES:
 6. Add helpful tips that might not be obvious to beginners
 7. Number steps sequentially, never skip numbers
 8. Explicitly mention temperatures, timing and technique details
+9. NEVER exceed available ingredient quantities
 
 Return EXACTLY this structure with no extra text.`;
 
 const genAI = new GoogleGenAI({apiKey: API_KEY});
 const modelName = "gemini-2.0-flash-001";
 
+// Helper function to format ingredients with quantities for prompts
+const formatIngredientsWithQuantities = (ingredients) => {
+  return ingredients.map(ing => {
+    return `${ing.name}: ${ing.quantity} ${ing.unit}${ing.category ? ` (${ing.category})` : ''}`;
+  }).join('\n');
+};
+
 // Create a reusable service
 export const geminiService = {
-  // File upload method
-  async uploadFile(filePath, mimeType = "text/plain") {
-    try {
-      const doc = await genAI.files.upload({
-        file: filePath,
-        config: { mimeType: mimeType },
-      });
-      console.log("Uploaded file name:", doc.name);
-      return doc;
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      throw error;
-    }
-  },
-  
-  // Get recipe suggestions based on ingredients
+  // Get recipe suggestions that respect available quantities
   async getRecipeSuggestions(ingredients, mealType, temperature = 0.7) {
     try {
-      // Format ingredients into a string
-      const ingredientsText = ingredients
-        .map(ingredient => ingredient.name)
-        .join(", ");
+      // Format ingredients with quantities
+      const ingredientsText = formatIngredientsWithQuantities(ingredients);
       
-      // Create custom instruction with the ingredients
-      const customInstruction = `
-        I have these ingredients in my kitchen: ${ingredientsText}.
-        Suggest 5 ${mealType} recipes I can make with these ingredients.
+      const prompt = `
+        I have these ingredients in my kitchen with the following quantities:
+        ${ingredientsText}
+        
+        Suggest 5 ${mealType} recipes I can make with these EXACT quantities. 
+        
+        CRITICAL REQUIREMENTS:
+        - Do NOT suggest recipes that require more of any ingredient than I have available
+        - Consider the quantities when suggesting recipes
+        - If an ingredient quantity is low, suggest recipes that use smaller amounts
+        - Adjust serving sizes based on available ingredient quantities
         
         IMPORTANT: I ONLY want the names of 5 recipes, numbered 1-5. 
         ONLY provide the recipe names, nothing else. 
-        No introductions, no descriptions, just a simple numbered list of 5 recipes.
+        No introductions, no descriptions, just a simple numbered list of 5 feasible recipes.
       `;
       
-      return await this.generateContent(customInstruction, temperature);
+      return await this.generateContent(prompt, temperature);
     } catch (error) {
       console.error('Error getting recipe suggestions:', error);
       throw error;
     }
   },
   
-  // Get detailed recipe instructions in JSON format
-  async getRecipeDetails(recipe, ingredients, temperature = 0.5) {
+  // Get detailed recipe instructions with quantity validation
+  async getRecipeDetails(recipe, ingredients, temperature = 0.2) {
     try {
-      // Format ingredients into a string
-      const ingredientsText = ingredients
-        .map(ingredient => ingredient.name)
-        .join(", ");
-        
-      // Use a much lower temperature for JSON generation to ensure formatting consistency
-      const jsonTemperature = 0.2;
+      // Format ingredients with quantities
+      const ingredientsText = formatIngredientsWithQuantities(ingredients);
       
-      // Create a very explicit prompt to get proper JSON format
-     const customPrompt = `
-        I have these ingredients in my kitchen: ${ingredientsText}.
+      const customPrompt = `
+        I have these ingredients in my kitchen with EXACT quantities:
+        ${ingredientsText}
         
-        I want you to create a recipe for "${recipe}" using only these ingredients plus common pantry staples.
+        Create a recipe for "${recipe}" using ONLY these ingredients with their available quantities.
+        
+        CRITICAL CONSTRAINTS:
+        - NEVER use more of any ingredient than what's available
+        - If the standard recipe calls for more than available, adjust the recipe size down
+        - Clearly state actual servings based on ingredient limitations
+        - Use realistic quantities that don't exceed what's in my pantry
         
         YOU MUST RESPOND WITH VALID JSON ONLY, with no text before or after. Do not include markdown code blocks.
         
@@ -126,9 +124,9 @@ export const geminiService = {
         {
           "recipe": {
             "name": "${recipe}",
-            "description": "A brief description",
+            "description": "A brief description noting any quantity adjustments",
             "prepTime": "X minutes",
-            "cookTime": "Y minutes",
+            "cookTime": "Y minutes", 
             "totalTime": "Z minutes",
             "servings": 4,
             "difficulty": "Easy/Medium/Hard",
@@ -150,26 +148,25 @@ export const geminiService = {
                 "equipment": ["tool1", "tool2"]
               }
             ],
-            "tags": ["tag1", "tag2", "tag3"]
+            "tags": ["tag1", "tag2", "tag3"],
+            "actualYield": "Actual servings based on available ingredients"
           }
         }
         
         IMPORTANT FORMATTING REQUIREMENTS:
-        1. Each ingredient must be properly structured as an object with separate name, quantity, unit, and preparation fields
-        2. Do not use any markdown formatting like bold or italic
-        3. The "name" field should only contain the ingredient name without any quantities or units
-        4. The "quantity" field should be a number (like 1, 0.5, 2)
-        5. The "unit" field should only contain the unit of measurement (like "cup", "tablespoon", "teaspoon")
+        1. Each ingredient must be properly structured with separate name, quantity, unit, and preparation fields
+        2. Do not use any markdown formatting
+        3. The "name" field should only contain the ingredient name
+        4. The "quantity" field should be a number that DOES NOT EXCEED available amounts
+        5. The "unit" field should match or be convertible to available units
+        6. Include "actualYield" field to show adjusted serving size
       `;
       
-      // Get the recipe details with a low temperature for consistent JSON formatting
-      console.log("Requesting recipe details for:", recipe);
-      const result = await this.generateContent(customPrompt, jsonTemperature);
+      console.log("Requesting quantity-aware recipe details for:", recipe);
+      const result = await this.generateContent(customPrompt, temperature);
       
-      // Log the raw response for debugging
       console.log("Raw recipe details response:", result.text);
       
-      // Try to parse the JSON response
       try {
         // Clean up the response text
         let jsonString = result.text.trim();
@@ -192,9 +189,18 @@ export const geminiService = {
         // Parse the JSON
         const jsonResult = JSON.parse(jsonString);
         
-        // Check the structure
+        // Validate the structure
         if (!jsonResult.recipe) {
           throw new Error("JSON response is missing the 'recipe' object");
+        }
+        
+        // Additional validation: check if recipe quantities don't exceed available
+        if (jsonResult.recipe.ingredients) {
+          const validation = this.validateRecipeQuantities(jsonResult.recipe.ingredients, ingredients);
+          if (!validation.isValid) {
+            console.warn("Recipe validation warnings:", validation.warnings);
+            // Still return the recipe but log warnings
+          }
         }
         
         return {
@@ -203,71 +209,7 @@ export const geminiService = {
         };
       } catch (parseError) {
         console.error('Error parsing JSON:', parseError);
-        
-        // If JSON parsing failed, try again with an even stricter prompt
-        console.log("First parsing attempt failed, trying again with stricter formatting...");
-        
-        const fallbackPrompt = `
-          I need a valid JSON object for a recipe called "${recipe}" using these ingredients: ${ingredientsText}.
-          EXTREMELY IMPORTANT: Return ONLY valid JSON with no other text.
-          The response must be ONLY the JSON object below with NO markdown code blocks or other text:
-          
-          {
-            "recipe": {
-              "name": "${recipe}",
-              "description": "A brief description",
-              "prepTime": "X minutes",
-              "cookTime": "Y minutes",
-              "totalTime": "Z minutes",
-              "servings": 4,
-              "difficulty": "Easy/Medium/Hard",
-              "ingredients": [
-                {"name": "Ingredient1", "quantity": 1, "unit": "unit", "preparation": ""}
-              ],
-              "instructions": [
-                {"stepNumber": 1, "instruction": "Step 1", "duration": 5, "tip": "", "ingredients": ["Ingredient1"], "equipment": []}
-              ],
-              "tags": ["quick"]
-            }
-          }
-        `;
-        
-        // Try one more time with minimal temperature
-        const retryResult = await this.generateContent(fallbackPrompt, 0.1);
-        console.log("Retry response:", retryResult.text);
-        
-        try {
-          // Clean up and find the JSON object in the retry response
-          let retryJsonString = retryResult.text.trim();
-          
-          // Remove markdown blocks
-          if (retryJsonString.includes("```")) {
-            retryJsonString = retryJsonString.replace(/```json/g, "").replace(/```/g, "").trim();
-          }
-          
-          // Get just the JSON part
-          const firstBrace = retryJsonString.indexOf('{');
-          const lastBrace = retryJsonString.lastIndexOf('}');
-          
-          if (firstBrace !== -1 && lastBrace > firstBrace) {
-            retryJsonString = retryJsonString.substring(firstBrace, lastBrace + 1);
-          }
-          
-          // Parse and verify
-          const retryJson = JSON.parse(retryJsonString);
-          
-          if (!retryJson.recipe) {
-            throw new Error("Retry response is missing the 'recipe' object");
-          }
-          
-          return {
-            json: retryJson,
-            text: retryResult.text
-          };
-        } catch (retryError) {
-          console.error("JSON parsing failed on retry:", retryError);
-          throw new Error("Failed to get recipe details in the correct format. Please try again.");
-        }
+        throw new Error('Failed to get recipe details in the correct format. Please try again.');
       }
     } catch (error) {
       console.error('Error getting recipe details:', error);
@@ -275,44 +217,66 @@ export const geminiService = {
     }
   },
   
+  // Validate that recipe doesn't exceed available quantities
+  validateRecipeQuantities(recipeIngredients, availableIngredients) {
+    const warnings = [];
+    let isValid = true;
+    
+    for (const recipeIng of recipeIngredients) {
+      const available = availableIngredients.find(ing => 
+        ing.name.toLowerCase() === recipeIng.name.toLowerCase()
+      );
+      
+      if (!available) {
+        warnings.push(`${recipeIng.name} is not available in pantry`);
+        isValid = false;
+      } else {
+        // Simple quantity check (you could enhance this with unit conversion)
+        if (parseFloat(recipeIng.quantity) > parseFloat(available.quantity)) {
+          warnings.push(`Recipe calls for ${recipeIng.quantity} ${recipeIng.unit} of ${recipeIng.name}, but only ${available.quantity} ${available.unit} available`);
+          isValid = false;
+        }
+      }
+    }
+    
+    return { isValid, warnings };
+  },
+  
   // Generate content directly using the Gemini API
   async generateContent(prompt, temperature = 0.7) {
-  try {
-    console.log("Sending prompt to Gemini with temperature:", temperature);
-    
-    // Create request configuration
-    const requestConfig = {
-      model: modelName,
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: temperature,
-        topP: 0.8,
-        topK: 40,
-        maxOutputTokens: 2048,
-      }
-    };
-    
-    // Use the correct API method
-    const response = await genAI.models.generateContent(requestConfig);
-    console.log("Raw Gemini response:", response);
-    
-    // Extract text based on the actual response structure
-    if (response && response.candidates && response.candidates.length > 0 &&
-        response.candidates[0].content && response.candidates[0].content.parts) {
-      const textParts = response.candidates[0].content.parts
-        .filter(part => part.text)
-        .map(part => part.text);
+    try {
+      console.log("Sending prompt to Gemini with temperature:", temperature);
       
-      const responseText = textParts.join('\n');
-      console.log("Extracted text:", responseText);
-      return { text: responseText };
-    } else {
-      console.error("Response structure doesn't match expected format:", response);
-      throw new Error("Unexpected response format from Gemini API");
+      const requestConfig = {
+        model: modelName,
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: temperature,
+          topP: 0.8,
+          topK: 40,
+          maxOutputTokens: 2048,
+        }
+      };
+      
+      const response = await genAI.models.generateContent(requestConfig);
+      console.log("Raw Gemini response:", response);
+      
+      if (response && response.candidates && response.candidates.length > 0 &&
+          response.candidates[0].content && response.candidates[0].content.parts) {
+        const textParts = response.candidates[0].content.parts
+          .filter(part => part.text)
+          .map(part => part.text);
+        
+        const responseText = textParts.join('\n');
+        console.log("Extracted text:", responseText);
+        return { text: responseText };
+      } else {
+        console.error("Response structure doesn't match expected format:", response);
+        throw new Error("Unexpected response format from Gemini API");
+      }
+    } catch (error) {
+      console.error('Detailed error generating content:', error);
+      throw error;
     }
-  } catch (error) {
-    console.error('Detailed error generating content:', error);
-    throw error;
   }
-}
 };

@@ -3,12 +3,16 @@ import React, { useState } from 'react';
 function RecipeViewer({ recipe, onBack }) {
   const [currentInstructionIndex, setCurrentInstructionIndex] = useState(0);
 
-  const goToNextInstruction = () => {
-    if (recipe && recipe.instructions && 
-        currentInstructionIndex < recipe.instructions.length - 1) {
-      setCurrentInstructionIndex(currentInstructionIndex + 1);
-    }
-  };
+const goToNextInstruction = () => {
+  if (recipe && recipe.instructions && 
+      currentInstructionIndex < recipe.instructions.length - 1) {
+    setCurrentInstructionIndex(currentInstructionIndex + 1);
+  } else if (currentInstructionIndex === recipe.instructions.length - 1) {
+    // Show completion message or go back to saved recipes
+    alert('Recipe completed! Great job!');
+    // Optionally: onBack(); // Go back to saved recipes automatically
+  }
+};
 
   const goToPreviousInstruction = () => {
     if (currentInstructionIndex > 0) {
@@ -58,6 +62,7 @@ function RecipeViewer({ recipe, onBack }) {
           {recipe.ingredients.map((ingredient, index) => (
             <li key={index} className="ingredient-item">
               <span className="ingredient-quantity">{ingredient.quantity} {ingredient.unit}</span>
+                {' '}{/* Explicitly add a space */}
               <span className="ingredient-name">{ingredient.name}</span>
               {ingredient.preparation && (
                 <span className="ingredient-prep">, {ingredient.preparation}</span>
@@ -88,7 +93,7 @@ function RecipeViewer({ recipe, onBack }) {
               {recipe.instructions[currentInstructionIndex].ingredients && 
                 recipe.instructions[currentInstructionIndex].ingredients.length > 0 && (
                 <div className="instruction-ingredients">
-                  <span className="meta-label">Ingredients:</span>
+                  <span className="meta-label">Ingredients: </span>
                   <span className="meta-value">{recipe.instructions[currentInstructionIndex].ingredients.join(', ')}</span>
                 </div>
               )}
@@ -96,7 +101,7 @@ function RecipeViewer({ recipe, onBack }) {
               {recipe.instructions[currentInstructionIndex].equipment && 
                 recipe.instructions[currentInstructionIndex].equipment.length > 0 && (
                 <div className="instruction-equipment">
-                  <span className="meta-label">Equipment:</span>
+                  <span className="meta-label">Equipment: </span>
                   <span className="meta-value">{recipe.instructions[currentInstructionIndex].equipment.join(', ')}</span>
                 </div>
               )}
@@ -117,10 +122,10 @@ function RecipeViewer({ recipe, onBack }) {
               
               <button 
                 onClick={goToNextInstruction} 
-                disabled={currentInstructionIndex === recipe.instructions.length - 1}
+                disabled={false}  // Remove the disabled condition
                 className="nav-button next"
               >
-                Next
+                {currentInstructionIndex === recipe.instructions.length - 1 ? 'Complete Recipe' : 'Next'}
               </button>
             </div>
           </div>

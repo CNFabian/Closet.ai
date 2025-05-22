@@ -11,6 +11,7 @@ import {
   orderBy, 
   limit,
   Timestamp,
+  writeBatch
 } from 'firebase/firestore';
 import { db } from './config';
 
@@ -43,105 +44,282 @@ export const getSavedRecipes = async () => {
     throw error;
   }
 };
-  
-  // Add a document to a collection
-  export const addDocument = async (collectionName, data) => {
-    try {
-      const docRef = await addDoc(collection(db, collectionName), {
-        name: data,
-        createdAt: Timestamp.now()
-      });
-      return docRef.id;
-    } catch (error) {
-      throw error;
-    }
-  };
-  
-  // Get a document by ID
-  export const getDocument = async (collectionName, docId) => {
-    try {
-      const docRef = doc(db, collectionName, docId);
-      const docSnap = await getDoc(docRef);
-      
-      if (docSnap.exists()) {
-        return { id: docSnap.id, ...docSnap.data() };
-      } else {
-        return null;
-      }
-    } catch (error) {
-      throw error;
-    }
-  };
-  
-  // Get all documents from a collection
-  export const getCollection = async (collectionName) => {
-    const array = [];
-    try {
-      const querySnapshot = await getDocs(collection(db, collectionName));
-      querySnapshot.forEach((doc) => {
-        console.log(doc.id, " => ", doc.data());
-        array.push(doc.data())
+
+// Add ingredient with quantity tracking
+export const addIngredient = async (ingredientData) => {
+  try {
+    const docRef = await addDoc(collection(db, 'ingredients'), {
+      name: ingredientData.name,
+      quantity: parseFloat(ingredientData.quantity) || 0,
+      unit: ingredientData.unit || '',
+      category: ingredientData.category || 'Other',
+      expirationDate: ingredientData.expirationDate || null,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now()
     });
-    } catch (error) {
-      throw error;
-    } finally {
-      return array
-    }
-  };
-  
-  // Query documents with filters
-  export const queryDocuments = async (collectionName, conditions = [], sortBy = null, limitTo = null) => {
-    try {
-      let q = collection(db, collectionName);
+    return docRef.id;
+  } catch (error) {
+    console.error('Error adding ingredient:', error);
+    throw error;
+  }
+};
+
+// Update ingredient quantity
+export const updateIngredientQuantity = async (ingredientId, newQuantity) => {
+  try {
+    const docRef = doc(db, 'ingredients', ingredientId);
+    await updateDoc(docRef, {
+      quantity: parseFloat(newQuantity),
+      updatedAt: Timestamp.now()
+    });
+    return true;
+  } catch (error) {
+    console.error('Error updating ingredient quantity:', error);
+    throw error;
+  }
+};
+
+// Subtract ingredients used in recipe (batch operation for consistency)
+export const subtractRecipeIngredients = async (usedIngredients) => {
+  try {
+    const batch = writeBatch(db);
+    
+    // Get current ingredient quantities
+    const ingredientsSnapshot = await getDocs(collection(db, 'ingredients'));
+    const currentIngredients = {};
+    
+    ingredientsSnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      currentIngredients[data.name.toLowerCase()] = {
+        id: doc.id,
+        quantity: data.quantity,
+        unit: data.unit,
+        ...data
+      };
+    });
+    
+    // Process each used ingredient
+    for (const usedIngredient of usedIngredients) {
+      const ingredientKey = usedIngredient.name.toLowerCase();
+      const currentIngredient = currentIngredients[ingredientKey];
       
-      // Add where conditions
-      if (conditions.length > 0) {
-        conditions.forEach(condition => {
-          q = query(q, where(condition.field, condition.operator, condition.value));
+      if (currentIngredient) {
+        // Convert quantities to same unit if needed (simplified conversion)
+        let quantityToSubtract = usedIngredient.quantity;
+        
+        // Basic unit conversion (you may want to expand this)
+        if (currentIngredient.unit !== usedIngredient.unit) {
+          quantityToSubtract = convertUnits(
+            usedIngredient.quantity, 
+            usedIngredient.unit, 
+            currentIngredient.unit
+          );
+        }
+        
+        const newQuantity = Math.max(0, currentIngredient.quantity - quantityToSubtract);
+        
+        const docRef = doc(db, 'ingredients', currentIngredient.id);
+        batch.update(docRef, {
+          quantity: newQuantity,
+          updatedAt: Timestamp.now()
         });
       }
-      
-      // Add orderBy
-      if (sortBy) {
-        q = query(q, orderBy(sortBy.field, sortBy.direction || 'asc'));
-      }
-      
-      // Add limit
-      if (limitTo) {
-        q = query(q, limit(limitTo));
-      }
-      
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-    } catch (error) {
-      throw error;
     }
+    
+    await batch.commit();
+    return true;
+  } catch (error) {
+    console.error('Error subtracting recipe ingredients:', error);
+    throw error;
+  }
+};
+
+// Basic unit conversion function (expand as needed)
+const convertUnits = (quantity, fromUnit, toUnit) => {
+  const conversions = {
+    // Volume conversions (simplified)
+    'cup_to_tablespoon': 16,
+    'tablespoon_to_teaspoon': 3,
+    'cup_to_teaspoon': 48,
+    // Add more conversions as needed
   };
   
-  // Update a document
-  export const updateDocument = async (collectionName, docId, data) => {
-    try {
-      const docRef = doc(db, collectionName, docId);
-      await updateDoc(docRef, {
-        ...data,
-        updatedAt: new Date()
+  const conversionKey = `${fromUnit}_to_${toUnit}`;
+  const reverseKey = `${toUnit}_to_${fromUnit}`;
+  
+  if (conversions[conversionKey]) {
+    return quantity * conversions[conversionKey];
+  } else if (conversions[reverseKey]) {
+    return quantity / conversions[reverseKey];
+  }
+  
+  // If no conversion available, return original quantity
+  return quantity;
+};
+
+// Check if recipe can be made with available ingredients
+export const validateRecipeIngredients = async (recipeIngredients) => {
+  try {
+    const ingredientsSnapshot = await getDocs(collection(db, 'ingredients'));
+    const availableIngredients = {};
+    
+    ingredientsSnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      availableIngredients[data.name.toLowerCase()] = {
+        quantity: data.quantity,
+        unit: data.unit,
+        ...data
+      };
+    });
+    
+    const validation = {
+      canMake: true,
+      missingIngredients: [],
+      insufficientIngredients: []
+    };
+    
+    for (const ingredient of recipeIngredients) {
+      const ingredientKey = ingredient.name.toLowerCase();
+      const available = availableIngredients[ingredientKey];
+      
+      if (!available) {
+        validation.canMake = false;
+        validation.missingIngredients.push(ingredient);
+      } else {
+        // Check if we have enough quantity
+        let requiredQuantity = ingredient.quantity;
+        
+        // Convert units if different
+        if (available.unit !== ingredient.unit) {
+          requiredQuantity = convertUnits(
+            ingredient.quantity, 
+            ingredient.unit, 
+            available.unit
+          );
+        }
+        
+        if (available.quantity < requiredQuantity) {
+          validation.canMake = false;
+          validation.insufficientIngredients.push({
+            ...ingredient,
+            available: available.quantity,
+            required: requiredQuantity,
+            unit: available.unit
+          });
+        }
+      }
+    }
+    
+    return validation;
+  } catch (error) {
+    console.error('Error validating recipe ingredients:', error);
+    throw error;
+  }
+};
+
+// Get all ingredients with quantities
+export const getIngredientsWithQuantities = async () => {
+  try {
+    const querySnapshot = await getDocs(collection(db, 'ingredients'));
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting ingredients:', error);
+    throw error;
+  }
+};
+
+// Legacy support - keeping existing functions
+export const addDocument = async (collectionName, data) => {
+  try {
+    const docRef = await addDoc(collection(db, collectionName), {
+      name: data,
+      createdAt: Timestamp.now()
+    });
+    return docRef.id;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getDocument = async (collectionName, docId) => {
+  try {
+    const docRef = doc(db, collectionName, docId);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() };
+    } else {
+      return null;
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getCollection = async (collectionName) => {
+  const array = [];
+  try {
+    const querySnapshot = await getDocs(collection(db, collectionName));
+    querySnapshot.forEach((doc) => {
+      array.push({ id: doc.id, ...doc.data() });
+    });
+  } catch (error) {
+    throw error;
+  } finally {
+    return array;
+  }
+};
+
+export const queryDocuments = async (collectionName, conditions = [], sortBy = null, limitTo = null) => {
+  try {
+    let q = collection(db, collectionName);
+    
+    if (conditions.length > 0) {
+      conditions.forEach(condition => {
+        q = query(q, where(condition.field, condition.operator, condition.value));
       });
-      return true;
-    } catch (error) {
-      throw error;
     }
-  };
-  
-  // Delete a document
-  export const deleteDocument = async (collectionName, docId) => {
-    try {
-      const docRef = doc(db, collectionName, docId);
-      await deleteDoc(docRef);
-      return true;
-    } catch (error) {
-      throw error;
+    
+    if (sortBy) {
+      q = query(q, orderBy(sortBy.field, sortBy.direction || 'asc'));
     }
-  };
+    
+    if (limitTo) {
+      q = query(q, limit(limitTo));
+    }
+    
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const updateDocument = async (collectionName, docId, data) => {
+  try {
+    const docRef = doc(db, collectionName, docId);
+    await updateDoc(docRef, {
+      ...data,
+      updatedAt: Timestamp.now()
+    });
+    return true;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const deleteDocument = async (collectionName, docId) => {
+  try {
+    const docRef = doc(db, collectionName, docId);
+    await deleteDoc(docRef);
+    return true;
+  } catch (error) {
+    throw error;
+  }
+};

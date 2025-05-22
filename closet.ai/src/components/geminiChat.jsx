@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { geminiService } from '../services/gemini/gemini';
-import { saveRecipe } from '../services/firebase/firestore';
-// Steps in the recipe generation process
+import { saveRecipe, validateRecipeIngredients, subtractRecipeIngredients } from '../services/firebase/firestore';
+
 const STEPS = {
   SELECT_MEAL_TYPE: 0,
   RECIPE_SUGGESTIONS: 1,
   SELECT_RECIPE: 2,
-  RECIPE_DETAILS: 3,
-  RECIPE_INSTRUCTIONS: 4
+  RECIPE_VALIDATION: 3,
+  RECIPE_DETAILS: 4,
+  RECIPE_COMPLETION: 5
 };
 
 function GeminiChat({ ingredients = [] }) {
@@ -17,54 +18,58 @@ function GeminiChat({ ingredients = [] }) {
   const [recipeOptions, setRecipeOptions] = useState([]);
   const [selectedRecipe, setSelectedRecipe] = useState('');
   const [recipeData, setRecipeData] = useState(null);
+  const [recipeValidation, setRecipeValidation] = useState(null);
   const [currentInstructionIndex, setCurrentInstructionIndex] = useState(0);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState(''); 
+  const [completedSteps, setCompletedSteps] = useState(new Set());
+  const [showCompletionConfirm, setShowCompletionConfirm] = useState(false);
   
   // UI states
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [temperature, setTemperature] = useState(0.7);
-  const [rawResponse, setRawResponse] = useState('');  // For debugging
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
 
-  // Add this function to handle saving recipes
-const handleSaveRecipe = async () => {
-  if (!recipeData) return;
-  
-  setIsSaving(true);
-  setSaveMessage('');
-  
-  try {
-    // Remove any non-serializable content or functions
-    const recipeToSave = {
-      name: recipeData.name,
-      description: recipeData.description,
-      prepTime: recipeData.prepTime,
-      cookTime: recipeData.cookTime,
-      totalTime: recipeData.totalTime,
-      servings: recipeData.servings,
-      difficulty: recipeData.difficulty,
-      ingredients: recipeData.ingredients,
-      instructions: recipeData.instructions,
-      tags: recipeData.tags || []
-    };
-    
-    await saveRecipe(recipeToSave);
-    setSaveMessage('Recipe saved successfully!');
-  } catch (error) {
-    console.error('Error saving recipe:', error);
-    setSaveMessage('Failed to save recipe. Please try again.');
-  } finally {
-    setIsSaving(false);
-    
-    // Clear message after 3 seconds
-    setTimeout(() => {
-      setSaveMessage('');
-    }, 3000);
-  }
-};
+  // Calculate recipe progress
+  const getRecipeProgress = () => {
+    if (!recipeData || !recipeData.instructions) return 0;
+    return Math.round((completedSteps.size / recipeData.instructions.length) * 100);
+  };
 
-  // Parse recipe suggestions into an array of names
+  // Handle saving recipes
+  const handleSaveRecipe = async () => {
+    if (!recipeData) return;
+    
+    setIsSaving(true);
+    setSaveMessage('');
+    
+    try {
+      const recipeToSave = {
+        name: recipeData.name,
+        description: recipeData.description,
+        prepTime: recipeData.prepTime,
+        cookTime: recipeData.cookTime,
+        totalTime: recipeData.totalTime,
+        servings: recipeData.servings,
+        difficulty: recipeData.difficulty,
+        ingredients: recipeData.ingredients,
+        instructions: recipeData.instructions,
+        tags: recipeData.tags || [],
+        adjustedFor: recipeData.adjustedFor || null
+      };
+      
+      await saveRecipe(recipeToSave);
+      setSaveMessage('Recipe saved successfully!');
+    } catch (error) {
+      console.error('Error saving recipe:', error);
+      setSaveMessage('Failed to save recipe. Please try again.');
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setSaveMessage(''), 3000);
+    }
+  };
+
+  // Parse recipe suggestions
   const parseRecipeSuggestions = (text) => {
     if (!text) return [];
     
@@ -72,7 +77,6 @@ const handleSaveRecipe = async () => {
     const lines = text.split('\n');
     
     for (const line of lines) {
-      // Look for lines that start with a number followed by a dot or period
       const match = line.match(/^\s*(\d+)[\.\)]\s*(.+)/);
       if (match && match[2].trim()) {
         recipes.push(match[2].trim());
@@ -82,7 +86,7 @@ const handleSaveRecipe = async () => {
     return recipes;
   };
 
-  // Step 1: Get recipe suggestions based on meal type
+  // Step 1: Get recipe suggestions
   const handleMealTypeSubmit = async (e) => {
     e.preventDefault();
     if (!mealType.trim()) {
@@ -97,7 +101,6 @@ const handleSaveRecipe = async () => {
       const result = await geminiService.getRecipeSuggestions(ingredients, mealType, temperature);
       const parsedRecipes = parseRecipeSuggestions(result.text);
       
-      // Make sure we got some recipes
       if (parsedRecipes.length === 0) {
         throw new Error('No recipe suggestions were found. Please try again.');
       }
@@ -112,54 +115,36 @@ const handleSaveRecipe = async () => {
     }
   };
 
-  // Step 2: Get detailed recipe instructions for the selected recipe
+  // Step 2: Validate and get recipe details
   const handleRecipeSelect = async (recipe) => {
     setSelectedRecipe(recipe);
     setLoading(true);
     setError('');
     
     try {
+      // First validate that we can make this recipe with available ingredients
+      setCurrentStep(STEPS.RECIPE_VALIDATION);
+      
       const result = await geminiService.getRecipeDetails(recipe, ingredients, temperature);
       
-      // Store the raw response for debugging
-      if (result.text) {
-        setRawResponse(result.text);
+      if (result.json && result.json.recipe) {
+        // Validate the recipe against available ingredients
+        const validation = await validateRecipeIngredients(result.json.recipe.ingredients);
+        setRecipeValidation(validation);
+        
+        if (validation.canMake) {
+          setRecipeData(result.json.recipe);
+          setCurrentStep(STEPS.RECIPE_DETAILS);
+          setCurrentInstructionIndex(0);
+          setCompletedSteps(new Set());
+        } else {
+          // Show validation issues but still allow user to proceed if they want
+          setRecipeData(result.json.recipe);
+          setCurrentStep(STEPS.RECIPE_VALIDATION);
+        }
+      } else {
+        throw new Error('Failed to get recipe details in the correct format. Please try again.');
       }
-      
-      // Check if we have parsed JSON
-    if (result.json && result.json.recipe) {
-      // Process the ingredients to ensure proper formatting
-      if (result.json.recipe.ingredients && Array.isArray(result.json.recipe.ingredients)) {
-        result.json.recipe.ingredients = result.json.recipe.ingredients.map(ingredient => {
-          // If the name has formatting like "**1 cup**Rice", fix it
-          if (typeof ingredient.name === 'string') {
-            // Remove any markdown-style bold formatting
-            let name = ingredient.name.replace(/\*\*/g, '');
-            
-            // Check if name starts with numbers and units that should be extracted
-            const unitMatch = name.match(/^(\d+(\.\d+)?)\s*(cup|cups|tablespoon|tablespoons|tbsp|teaspoon|teaspoons|tsp|oz|ounce|ounces|g|gram|grams|lb|pound|pounds)\s+(.+)$/i);
-            
-            if (unitMatch) {
-              // If we find embedded quantities and units, extract them
-              return {
-                ...ingredient,
-                quantity: parseFloat(unitMatch[1]) || ingredient.quantity,
-                unit: unitMatch[3] || ingredient.unit,
-                name: unitMatch[4] || ingredient.name
-              };
-            }
-          }
-          return ingredient;
-        });
-      }
-      
-      setRecipeData(result.json.recipe);
-      setCurrentStep(STEPS.RECIPE_DETAILS);
-      setCurrentInstructionIndex(0);
-    } else {
-      // We didn't get valid JSON, show an error
-      throw new Error('Failed to get recipe details in the correct format. Please try again.');
-    }
     } catch (error) {
       console.error('Error getting recipe details:', error);
       setError(error.message || 'Failed to get recipe details. Please try again.');
@@ -168,14 +153,30 @@ const handleSaveRecipe = async () => {
     }
   };
 
-  // Navigation for step-by-step instructions
+  // Proceed with recipe despite validation issues
+  const proceedWithRecipe = () => {
+    setCurrentStep(STEPS.RECIPE_DETAILS);
+    setCurrentInstructionIndex(0);
+    setCompletedSteps(new Set());
+  };
+
+  // Mark step as complete
+  const markStepComplete = () => {
+    const newCompleted = new Set(completedSteps);
+    newCompleted.add(currentInstructionIndex);
+    setCompletedSteps(newCompleted);
+    
+    // If all steps are completed, show completion confirmation
+    if (newCompleted.size === recipeData.instructions.length) {
+      setShowCompletionConfirm(true);
+    }
+  };
+
+  // Navigation for instructions
   const goToNextInstruction = () => {
     if (recipeData && recipeData.instructions && 
         currentInstructionIndex < recipeData.instructions.length - 1) {
       setCurrentInstructionIndex(currentInstructionIndex + 1);
-    } else if (currentInstructionIndex === recipeData.instructions.length - 1) {
-      // If we're at the last instruction, move to a completion screen
-      setCurrentStep(STEPS.RECIPE_INSTRUCTIONS);
     }
   };
 
@@ -185,25 +186,55 @@ const handleSaveRecipe = async () => {
     }
   };
 
-  // Reset to start over
+  // Complete recipe and update inventory
+  const handleCompleteRecipe = async () => {
+    if (!recipeData) return;
+    
+    setLoading(true);
+    
+    try {
+      // Subtract used ingredients from inventory
+      await subtractRecipeIngredients(recipeData.ingredients);
+      
+      setCurrentStep(STEPS.RECIPE_COMPLETION);
+      setShowCompletionConfirm(false);
+      
+      // You might want to refresh ingredients in parent component
+      // if (onIngredientsUpdated) onIngredientsUpdated();
+      
+    } catch (error) {
+      console.error('Error updating inventory:', error);
+      setError('Failed to update inventory. Please check your ingredient quantities manually.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Reset everything
   const handleRestart = () => {
     setCurrentStep(STEPS.SELECT_MEAL_TYPE);
     setMealType('');
     setRecipeOptions([]);
     setSelectedRecipe('');
     setRecipeData(null);
+    setRecipeValidation(null);
     setCurrentInstructionIndex(0);
+    setCompletedSteps(new Set());
+    setShowCompletionConfirm(false);
     setError('');
-    setRawResponse('');
   };
 
   // Back button logic
   const handleBack = () => {
     if (currentStep === STEPS.SELECT_RECIPE) {
       setCurrentStep(STEPS.SELECT_MEAL_TYPE);
-    } else if (currentStep === STEPS.RECIPE_DETAILS || currentStep === STEPS.RECIPE_INSTRUCTIONS) {
+    } else if (currentStep === STEPS.RECIPE_VALIDATION || 
+               currentStep === STEPS.RECIPE_DETAILS || 
+               currentStep === STEPS.RECIPE_COMPLETION) {
       setCurrentStep(STEPS.SELECT_RECIPE);
       setRecipeData(null);
+      setRecipeValidation(null);
+      setCompletedSteps(new Set());
     }
   };
 
@@ -218,30 +249,29 @@ const handleSaveRecipe = async () => {
           <div className="ingredients-list">
             {ingredients.map((ing, idx) => (
               <span key={`ing-${idx}`} className="ingredient-tag">
-                {ing.name}
+                {ing.name} ({ing.quantity} {ing.unit})
               </span>
             ))}
           </div>
         ) : (
-          <p>Please add ingredients in the form above first</p>
+          <p>Please add ingredients with quantities first</p>
         )}
       </div>
       
-      {/* Temperature control */}
-      <div className="temperature-control">
-        <label>
-          Creativity: {temperature.toFixed(1)}
-          <input 
-            type="range" 
-            min="0" 
-            max="1" 
-            step="0.1" 
-            value={temperature} 
-            onChange={(e) => setTemperature(parseFloat(e.target.value))}
-          />
-        </label>
-        <small>Low: Consistent results | High: Creative results</small>
-      </div>
+      {/* Progress indicator for recipe */}
+      {currentStep >= STEPS.RECIPE_DETAILS && recipeData && (
+        <div className="recipe-progress">
+          <div className="progress-bar">
+            <div 
+              className="progress-fill" 
+              style={{ width: `${getRecipeProgress()}%` }}
+            ></div>
+          </div>
+          <div className="progress-text">
+            Recipe Progress: {completedSteps.size} of {recipeData.instructions.length} steps completed
+          </div>
+        </div>
+      )}
       
       {/* Error message */}
       {error && <div className="error-message">{error}</div>}
@@ -270,7 +300,7 @@ const handleSaveRecipe = async () => {
       {currentStep === STEPS.SELECT_RECIPE && (
         <div className="step recipe-selection">
           <h2>Choose a Recipe to Make</h2>
-          <p>Based on your ingredients, here are some {mealType} ideas:</p>
+          <p>Based on your available ingredients, here are some {mealType} ideas:</p>
           <div className="recipe-options">
             {recipeOptions.map((recipe, index) => (
               <button
@@ -289,10 +319,78 @@ const handleSaveRecipe = async () => {
         </div>
       )}
       
-      {/* Step 3: Recipe Overview */}
+      {/* Step 3: Recipe Validation */}
+      {currentStep === STEPS.RECIPE_VALIDATION && recipeValidation && (
+        <div className="step recipe-validation">
+          <h2>Recipe Validation: {selectedRecipe}</h2>
+          
+          <div className={`recipe-validation ${recipeValidation.canMake ? 'can-make' : 'cannot-make'}`}>
+            {recipeValidation.canMake ? (
+              <div>
+                <h3>✅ You can make this recipe!</h3>
+                <p>All required ingredients are available in sufficient quantities.</p>
+              </div>
+            ) : (
+              <div>
+                <h3>⚠️ Recipe Adjustments Needed</h3>
+                <p>There are some issues with ingredient availability:</p>
+                
+                <div className="validation-issues">
+                  {recipeValidation.missingIngredients.length > 0 && (
+                    <div>
+                      <h4>Missing Ingredients:</h4>
+                      <ul>
+                        {recipeValidation.missingIngredients.map((ing, idx) => (
+                          <li key={idx}>{ing.name}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {recipeValidation.insufficientIngredients.length > 0 && (
+                    <div>
+                      <h4>Insufficient Quantities:</h4>
+                      <ul>
+                        {recipeValidation.insufficientIngredients.map((ing, idx) => (
+                          <li key={idx}>
+                            {ing.name}: need {ing.required} {ing.unit}, have {ing.available} {ing.unit}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="navigation-buttons">
+            <button className="back-button" onClick={handleBack}>
+              Choose Different Recipe
+            </button>
+            {recipeValidation.canMake ? (
+              <button className="confirm-button" onClick={proceedWithRecipe}>
+                Start Cooking!
+              </button>
+            ) : (
+              <button className="confirm-button" onClick={proceedWithRecipe}>
+                Proceed Anyway
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {/* Step 4: Recipe Details and Instructions */}
       {currentStep === STEPS.RECIPE_DETAILS && recipeData && (
         <div className="step recipe-details">
           <h2>{recipeData.name}</h2>
+          
+          {recipeData.adjustedFor && (
+            <div className="adjustment-notice">
+              <p><strong>Note:</strong> {recipeData.adjustedFor}</p>
+            </div>
+          )}
           
           <div className="recipe-overview">
             <p className="recipe-description">{recipeData.description}</p>
@@ -315,14 +413,6 @@ const handleSaveRecipe = async () => {
               </div>
             </div>
             
-            {recipeData.tags && recipeData.tags.length > 0 && (
-              <div className="recipe-tags">
-                {recipeData.tags.map((tag, index) => (
-                  <span key={index} className="tag">{tag}</span>
-                ))}
-              </div>
-            )}
-            
             <h3>Ingredients</h3>
             <ul className="ingredients-list detailed">
               {recipeData.ingredients.map((ingredient, index) => (
@@ -330,7 +420,7 @@ const handleSaveRecipe = async () => {
                   <span className="ingredient-quantity">
                     {ingredient.quantity} {ingredient.unit}
                   </span>
-                  {' '}{/* Explicitly add a space */}
+                  {' '}
                   <span className="ingredient-name">{ingredient.name}</span>
                   {ingredient.preparation && (
                     <span className="ingredient-prep">, {ingredient.preparation}</span>
@@ -343,8 +433,13 @@ const handleSaveRecipe = async () => {
             <div className="step-by-step-container">
               <div className="instruction-card">
                 <div className="instruction-header">
-                  <span className="step-number">Step {recipeData.instructions[currentInstructionIndex].stepNumber}</span>
-                  <span className="step-duration">{recipeData.instructions[currentInstructionIndex].duration} min</span>
+                  <span className="step-number">
+                    Step {recipeData.instructions[currentInstructionIndex].stepNumber}
+                    {completedSteps.has(currentInstructionIndex) && ' ✅'}
+                  </span>
+                  <span className="step-duration">
+                    {recipeData.instructions[currentInstructionIndex].duration} min
+                  </span>
                 </div>
                 
                 <p className="instruction-text">
@@ -357,22 +452,14 @@ const handleSaveRecipe = async () => {
                   </div>
                 )}
                 
-                <div className="instruction-meta">
-                  {recipeData.instructions[currentInstructionIndex].ingredients && 
-                   recipeData.instructions[currentInstructionIndex].ingredients.length > 0 && (
-                    <div className="instruction-ingredients">
-                      <span className="meta-label">Ingredients: </span>
-                      <span className="meta-value">{recipeData.instructions[currentInstructionIndex].ingredients.join(', ')}</span>
-                    </div>
-                  )}
-                  
-                  {recipeData.instructions[currentInstructionIndex].equipment && 
-                   recipeData.instructions[currentInstructionIndex].equipment.length > 0 && (
-                    <div className="instruction-equipment">
-                      <span className="meta-label">Equipment: </span>
-                      <span className="meta-value">{recipeData.instructions[currentInstructionIndex].equipment.join(', ')}</span>
-                    </div>
-                  )}
+                <div className="step-actions">
+                  <button 
+                    onClick={markStepComplete}
+                    disabled={completedSteps.has(currentInstructionIndex)}
+                    className="complete-step-button"
+                  >
+                    {completedSteps.has(currentInstructionIndex) ? 'Step Completed ✅' : 'Mark as Complete'}
+                  </button>
                 </div>
                 
                 <div className="step-navigation">
@@ -400,44 +487,75 @@ const handleSaveRecipe = async () => {
             </div>
           </div>
           
-      <div className="navigation-buttons">
-        <button className="back-button" onClick={handleBack} disabled={loading}>
-          Back to Recipes
-        </button>
-        <button 
-          className="save-button" 
-          onClick={handleSaveRecipe} 
-          disabled={isSaving || loading}
-        >
-          {isSaving ? 'Saving...' : 'Save Recipe'}
-        </button>
-        <button className="restart-button" onClick={handleRestart} disabled={loading}>
-          Start Over
-        </button>
-      </div>
+          <div className="navigation-buttons">
+            <button className="back-button" onClick={handleBack} disabled={loading}>
+              Back to Recipes
+            </button>
+            <button 
+              className="save-button" 
+              onClick={handleSaveRecipe} 
+              disabled={isSaving || loading}
+            >
+              {isSaving ? 'Saving...' : 'Save Recipe'}
+            </button>
+            <button className="restart-button" onClick={handleRestart} disabled={loading}>
+              Start Over
+            </button>
+          </div>
 
-      {/* Add this message display */}
-      {saveMessage && (
-        <div className={`save-message ${saveMessage.includes('Failed') ? 'error' : 'success'}`}>
-          {saveMessage}
-        </div>
-      )}
+          {saveMessage && (
+            <div className={`save-message ${saveMessage.includes('Failed') ? 'error' : 'success'}`}>
+              {saveMessage}
+            </div>
+          )}
         </div>
       )}
       
-      {/* Step 4: Recipe Complete */}
-      {currentStep === STEPS.RECIPE_INSTRUCTIONS && recipeData && (
+      {/* Recipe Completion Confirmation */}
+      {showCompletionConfirm && (
+        <div className="recipe-completion">
+          <h3>Complete Recipe and Update Inventory?</h3>
+          <p>You've completed all steps! This will subtract the used ingredients from your pantry.</p>
+          
+          <div className="ingredients-used">
+            <h4>Ingredients to be subtracted:</h4>
+            <ul>
+              {recipeData.ingredients.map((ing, idx) => (
+                <li key={idx}>
+                  {ing.quantity} {ing.unit} {ing.name}
+                </li>
+              ))}
+            </ul>
+          </div>
+          
+          <div className="completion-buttons">
+            <button 
+              className="cancel-button" 
+              onClick={() => setShowCompletionConfirm(false)}
+            >
+              Cancel
+            </button>
+            <button 
+              className="confirm-button" 
+              onClick={handleCompleteRecipe}
+              disabled={loading}
+            >
+              {loading ? 'Updating...' : 'Complete Recipe'}
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Step 5: Recipe Completed */}
+      {currentStep === STEPS.RECIPE_COMPLETION && (
         <div className="step recipe-complete">
-          <h2>Recipe Complete!</h2>
-          <p>You've finished all the steps for {recipeData.name}.</p>
-          <p>Enjoy your meal!</p>
+          <h2>🎉 Recipe Complete!</h2>
+          <p>Congratulations! You've successfully made {recipeData?.name}.</p>
+          <p>Your ingredient inventory has been updated to reflect what you used.</p>
           
           <div className="navigation-buttons">
-            <button className="back-button" onClick={() => setCurrentStep(STEPS.RECIPE_DETAILS)}>
-              Review Recipe
-            </button>
             <button className="restart-button" onClick={handleRestart}>
-              Find Another Recipe
+              Make Another Recipe
             </button>
           </div>
         </div>
@@ -445,14 +563,6 @@ const handleSaveRecipe = async () => {
       
       {/* Loading indicator */}
       {loading && <div className="loading-spinner">Loading...</div>}
-      
-      {/* Raw response for debugging - you can remove this in production */}
-      {rawResponse && (
-        <div className="debug-section" style={{display: 'none'}}>
-          <h3>Raw Response (Debug)</h3>
-          <pre>{rawResponse}</pre>
-        </div>
-      )}
     </div>
   );
 }
