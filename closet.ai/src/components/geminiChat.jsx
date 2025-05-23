@@ -20,7 +20,6 @@ function GeminiChat({ ingredients = [] }) {
   const [recipeData, setRecipeData] = useState(null);
   const [recipeValidation, setRecipeValidation] = useState(null);
   const [currentInstructionIndex, setCurrentInstructionIndex] = useState(0);
-  const [completedSteps, setCompletedSteps] = useState(new Set());
   const [showCompletionConfirm, setShowCompletionConfirm] = useState(false);
   
   // UI states
@@ -29,12 +28,6 @@ function GeminiChat({ ingredients = [] }) {
   const [temperature, setTemperature] = useState(0.7);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
-
-  // Calculate recipe progress
-  const getRecipeProgress = () => {
-    if (!recipeData || !recipeData.instructions) return 0;
-    return Math.round((completedSteps.size / recipeData.instructions.length) * 100);
-  };
 
   // Handle saving recipes
   const handleSaveRecipe = async () => {
@@ -136,7 +129,6 @@ function GeminiChat({ ingredients = [] }) {
           setRecipeData(result.json.recipe);
           setCurrentStep(STEPS.RECIPE_DETAILS);
           setCurrentInstructionIndex(0);
-          setCompletedSteps(new Set());
         } else {
           // Show validation issues but still allow user to proceed if they want
           setRecipeData(result.json.recipe);
@@ -157,19 +149,6 @@ function GeminiChat({ ingredients = [] }) {
   const proceedWithRecipe = () => {
     setCurrentStep(STEPS.RECIPE_DETAILS);
     setCurrentInstructionIndex(0);
-    setCompletedSteps(new Set());
-  };
-
-  // Mark step as complete
-  const markStepComplete = () => {
-    const newCompleted = new Set(completedSteps);
-    newCompleted.add(currentInstructionIndex);
-    setCompletedSteps(newCompleted);
-    
-    // If all steps are completed, show completion confirmation
-    if (newCompleted.size === recipeData.instructions.length) {
-      setShowCompletionConfirm(true);
-    }
   };
 
   // Navigation for instructions
@@ -177,6 +156,14 @@ function GeminiChat({ ingredients = [] }) {
     if (recipeData && recipeData.instructions && 
         currentInstructionIndex < recipeData.instructions.length - 1) {
       setCurrentInstructionIndex(currentInstructionIndex + 1);
+      
+      // Check if we've reached the last step
+      if (currentInstructionIndex + 1 === recipeData.instructions.length - 1) {
+        // We're now on the last step, show completion confirm when they try to go next
+      }
+    } else if (currentInstructionIndex === recipeData.instructions.length - 1) {
+      // We're on the last step, show completion confirmation
+      setShowCompletionConfirm(true);
     }
   };
 
@@ -219,7 +206,6 @@ function GeminiChat({ ingredients = [] }) {
     setRecipeData(null);
     setRecipeValidation(null);
     setCurrentInstructionIndex(0);
-    setCompletedSteps(new Set());
     setShowCompletionConfirm(false);
     setError('');
   };
@@ -234,7 +220,6 @@ function GeminiChat({ ingredients = [] }) {
       setCurrentStep(STEPS.SELECT_RECIPE);
       setRecipeData(null);
       setRecipeValidation(null);
-      setCompletedSteps(new Set());
     }
   };
 
@@ -257,21 +242,6 @@ function GeminiChat({ ingredients = [] }) {
           <p>Please add ingredients with quantities first</p>
         )}
       </div>
-      
-      {/* Progress indicator for recipe */}
-      {currentStep >= STEPS.RECIPE_DETAILS && recipeData && (
-        <div className="recipe-progress">
-          <div className="progress-bar">
-            <div 
-              className="progress-fill" 
-              style={{ width: `${getRecipeProgress()}%` }}
-            ></div>
-          </div>
-          <div className="progress-text">
-            Recipe Progress: {completedSteps.size} of {recipeData.instructions.length} steps completed
-          </div>
-        </div>
-      )}
       
       {/* Error message */}
       {error && <div className="error-message">{error}</div>}
@@ -435,7 +405,6 @@ function GeminiChat({ ingredients = [] }) {
                 <div className="instruction-header">
                   <span className="step-number">
                     Step {recipeData.instructions[currentInstructionIndex].stepNumber}
-                    {completedSteps.has(currentInstructionIndex) && ' ✅'}
                   </span>
                   <span className="step-duration">
                     {recipeData.instructions[currentInstructionIndex].duration} min
@@ -467,10 +436,10 @@ function GeminiChat({ ingredients = [] }) {
                   
                   <button 
                     onClick={goToNextInstruction} 
-                    disabled={currentInstructionIndex === recipeData.instructions.length - 1}
+                    disabled={false}
                     className="nav-button next"
                   >
-                    Next
+                    {currentInstructionIndex === recipeData.instructions.length - 1 ? 'Complete Recipe' : 'Next'}
                   </button>
                 </div>
               </div>
@@ -503,35 +472,37 @@ function GeminiChat({ ingredients = [] }) {
       
       {/* Recipe Completion Confirmation */}
       {showCompletionConfirm && (
-        <div className="recipe-completion">
-          <h3>Complete Recipe and Update Inventory?</h3>
-          <p>You've completed all steps! This will subtract the used ingredients from your pantry.</p>
-          
-          <div className="ingredients-used">
-            <h4>Ingredients to be subtracted:</h4>
-            <ul>
-              {recipeData.ingredients.map((ing, idx) => (
-                <li key={idx}>
-                  {ing.quantity} {ing.unit} {ing.name}
-                </li>
-              ))}
-            </ul>
-          </div>
-          
-          <div className="completion-buttons">
-            <button 
-              className="cancel-button" 
-              onClick={() => setShowCompletionConfirm(false)}
-            >
-              Cancel
-            </button>
-            <button 
-              className="confirm-button" 
-              onClick={handleCompleteRecipe}
-              disabled={loading}
-            >
-              {loading ? 'Updating...' : 'Complete Recipe'}
-            </button>
+        <div className="recipe-completion-overlay">
+          <div className="recipe-completion">
+            <h3>Complete Recipe and Update Inventory?</h3>
+            <p>You've completed all steps! This will subtract the used ingredients from your pantry.</p>
+            
+            <div className="ingredients-used">
+              <h4>Ingredients to be subtracted:</h4>
+              <ul>
+                {recipeData.ingredients.map((ing, idx) => (
+                  <li key={idx}>
+                    {ing.quantity} {ing.unit} {ing.name}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
+            <div className="completion-buttons">
+              <button 
+                className="cancel-button" 
+                onClick={() => setShowCompletionConfirm(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="confirm-button" 
+                onClick={handleCompleteRecipe}
+                disabled={loading}
+              >
+                {loading ? 'Updating...' : 'Complete Recipe'}
+              </button>
+            </div>
           </div>
         </div>
       )}
