@@ -452,16 +452,6 @@ function GeminiChat({ ingredients = [] }) {
                   </div>
                 )}
                 
-                <div className="step-actions">
-                  <button 
-                    onClick={markStepComplete}
-                    disabled={completedSteps.has(currentInstructionIndex)}
-                    className="complete-step-button"
-                  >
-                    {completedSteps.has(currentInstructionIndex) ? 'Step Completed ✅' : 'Mark as Complete'}
-                  </button>
-                </div>
-                
                 <div className="step-navigation">
                   <button 
                     onClick={goToPreviousInstruction} 
