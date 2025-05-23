@@ -2,22 +2,29 @@ import React, { useState } from 'react';
 
 function RecipeViewer({ recipe, onBack }) {
   const [currentInstructionIndex, setCurrentInstructionIndex] = useState(0);
+  const [showCompletionConfirm, setShowCompletionConfirm] = useState(false);
 
-const goToNextInstruction = () => {
-  if (recipe && recipe.instructions && 
-      currentInstructionIndex < recipe.instructions.length - 1) {
-    setCurrentInstructionIndex(currentInstructionIndex + 1);
-  } else if (currentInstructionIndex === recipe.instructions.length - 1) {
-    // Show completion message or go back to saved recipes
-    alert('Recipe completed! Great job!');
-    // Optionally: onBack(); // Go back to saved recipes automatically
-  }
-};
+  const goToNextInstruction = () => {
+    if (recipe && recipe.instructions && 
+        currentInstructionIndex < recipe.instructions.length - 1) {
+      setCurrentInstructionIndex(currentInstructionIndex + 1);
+    } else if (currentInstructionIndex === recipe.instructions.length - 1) {
+      // We're on the last step, show completion confirmation
+      setShowCompletionConfirm(true);
+    }
+  };
 
   const goToPreviousInstruction = () => {
     if (currentInstructionIndex > 0) {
       setCurrentInstructionIndex(currentInstructionIndex - 1);
     }
+  };
+
+  const handleCompleteRecipe = () => {
+    setShowCompletionConfirm(false);
+    alert('Recipe completed! Great job!');
+    // Optionally go back to saved recipes
+    // onBack();
   };
 
   if (!recipe) {
@@ -27,6 +34,12 @@ const goToNextInstruction = () => {
   return (
     <div className="step recipe-details">
       <h2>{recipe.name}</h2>
+      
+      {recipe.adjustedFor && (
+        <div className="adjustment-notice">
+          <p><strong>Note:</strong> {recipe.adjustedFor}</p>
+        </div>
+      )}
       
       <div className="recipe-overview">
         <p className="recipe-description">{recipe.description}</p>
@@ -61,8 +74,10 @@ const goToNextInstruction = () => {
         <ul className="ingredients-list detailed">
           {recipe.ingredients.map((ingredient, index) => (
             <li key={index} className="ingredient-item">
-              <span className="ingredient-quantity">{ingredient.quantity} {ingredient.unit}</span>
-                {' '}{/* Explicitly add a space */}
+              <span className="ingredient-quantity">
+                {ingredient.quantity} {ingredient.unit}
+              </span>
+              {' '}
               <span className="ingredient-name">{ingredient.name}</span>
               {ingredient.preparation && (
                 <span className="ingredient-prep">, {ingredient.preparation}</span>
@@ -75,8 +90,12 @@ const goToNextInstruction = () => {
         <div className="step-by-step-container">
           <div className="instruction-card">
             <div className="instruction-header">
-              <span className="step-number">Step {recipe.instructions[currentInstructionIndex].stepNumber}</span>
-              <span className="step-duration">{recipe.instructions[currentInstructionIndex].duration} min</span>
+              <span className="step-number">
+                Step {recipe.instructions[currentInstructionIndex].stepNumber}
+              </span>
+              <span className="step-duration">
+                {recipe.instructions[currentInstructionIndex].duration} min
+              </span>
             </div>
             
             <p className="instruction-text">
@@ -89,23 +108,29 @@ const goToNextInstruction = () => {
               </div>
             )}
             
-            <div className="instruction-meta">
-              {recipe.instructions[currentInstructionIndex].ingredients && 
-                recipe.instructions[currentInstructionIndex].ingredients.length > 0 && (
-                <div className="instruction-ingredients">
-                  <span className="meta-label">Ingredients: </span>
-                  <span className="meta-value">{recipe.instructions[currentInstructionIndex].ingredients.join(', ')}</span>
-                </div>
-              )}
-              
-              {recipe.instructions[currentInstructionIndex].equipment && 
-                recipe.instructions[currentInstructionIndex].equipment.length > 0 && (
-                <div className="instruction-equipment">
-                  <span className="meta-label">Equipment: </span>
-                  <span className="meta-value">{recipe.instructions[currentInstructionIndex].equipment.join(', ')}</span>
-                </div>
-              )}
-            </div>
+            {/* Optional instruction meta - only show if present */}
+            {((recipe.instructions[currentInstructionIndex].ingredients && 
+              recipe.instructions[currentInstructionIndex].ingredients.length > 0) ||
+              (recipe.instructions[currentInstructionIndex].equipment && 
+              recipe.instructions[currentInstructionIndex].equipment.length > 0)) && (
+              <div className="instruction-meta">
+                {recipe.instructions[currentInstructionIndex].ingredients && 
+                  recipe.instructions[currentInstructionIndex].ingredients.length > 0 && (
+                  <div className="instruction-ingredients">
+                    <span className="meta-label">Ingredients: </span>
+                    <span className="meta-value">{recipe.instructions[currentInstructionIndex].ingredients.join(', ')}</span>
+                  </div>
+                )}
+                
+                {recipe.instructions[currentInstructionIndex].equipment && 
+                  recipe.instructions[currentInstructionIndex].equipment.length > 0 && (
+                  <div className="instruction-equipment">
+                    <span className="meta-label">Equipment: </span>
+                    <span className="meta-value">{recipe.instructions[currentInstructionIndex].equipment.join(', ')}</span>
+                  </div>
+                )}
+              </div>
+            )}
             
             <div className="step-navigation">
               <button 
@@ -122,7 +147,7 @@ const goToNextInstruction = () => {
               
               <button 
                 onClick={goToNextInstruction} 
-                disabled={false}  // Remove the disabled condition
+                disabled={false}
                 className="nav-button next"
               >
                 {currentInstructionIndex === recipe.instructions.length - 1 ? 'Complete Recipe' : 'Next'}
@@ -132,9 +157,37 @@ const goToNextInstruction = () => {
         </div>
       </div>
       
-      <button className="back-button" onClick={onBack}>
-        Back to Saved Recipes
-      </button>
+      <div className="navigation-buttons">
+        <button className="back-button" onClick={onBack}>
+          Back to Saved Recipes
+        </button>
+        {/* You can add additional buttons here like in geminiChat */}
+      </div>
+      
+      {/* Recipe Completion Confirmation - same as geminiChat but simplified */}
+      {showCompletionConfirm && (
+        <div className="recipe-completion-overlay">
+          <div className="recipe-completion">
+            <h3>Recipe Complete!</h3>
+            <p>You've completed all steps of {recipe.name}!</p>
+            
+            <div className="completion-buttons">
+              <button 
+                className="cancel-button" 
+                onClick={() => setShowCompletionConfirm(false)}
+              >
+                Continue Viewing
+              </button>
+              <button 
+                className="confirm-button" 
+                onClick={handleCompleteRecipe}
+              >
+                Complete Recipe
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

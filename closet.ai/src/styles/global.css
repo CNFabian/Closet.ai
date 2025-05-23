@@ -643,6 +643,19 @@ header h1 {
   color: #27ae60;
 }
 
+.recipe-completion-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
 /* Recipe completion celebration */
 .recipe-completion {
   text-align: center;
@@ -651,6 +664,8 @@ header h1 {
   border-radius: 12px;
   margin: 20px 0;
   border: 2px solid #28a745;
+  max-width: 500px;
+  width: 90%;
 }
 
 .recipe-completion h2 {
