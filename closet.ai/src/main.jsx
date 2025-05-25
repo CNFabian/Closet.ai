@@ -95,6 +95,7 @@ function App() {
         <RecipeViewer 
           recipe={selectedSavedRecipe} 
           onBack={() => setActiveView('savedRecipes')} 
+          onIngredientsUpdated={updateIngredients}
         />
       )}
     </>

@@ -78,6 +78,38 @@ header h1 {
   font-size: 0.9rem;
 }
 
+.ingredients-used {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 15px;
+  margin: 20px 0;
+  text-align: left;
+}
+
+.ingredients-used h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #495057;
+  font-size: 1rem;
+}
+
+.ingredients-used ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ingredients-used li {
+  padding: 5px 0;
+  border-bottom: 1px solid #e9ecef;
+  color: #6c757d;
+}
+
+.ingredients-used li:last-child {
+  border-bottom: none;
+}
+
 .temperature-control {
   margin: 15px 0;
   padding: 10px;
@@ -686,6 +718,39 @@ header h1 {
   justify-content: center;
   gap: 15px;
   margin-top: 25px;
+}
+
+.completion-buttons .cancel-button {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.completion-buttons .cancel-button:hover {
+  background-color: #5a6268;
+}
+
+.completion-buttons .confirm-button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.completion-buttons .confirm-button:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.completion-buttons .confirm-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }
 
 .inventory-update-message {

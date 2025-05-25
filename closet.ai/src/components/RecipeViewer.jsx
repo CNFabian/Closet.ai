@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
+import { subtractRecipeIngredients } from '../services/firebase/firestore';
 
 function RecipeViewer({ recipe, onBack }) {
   const [currentInstructionIndex, setCurrentInstructionIndex] = useState(0);
   const [showCompletionConfirm, setShowCompletionConfirm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const goToNextInstruction = () => {
     if (recipe && recipe.instructions && 
@@ -20,17 +23,35 @@ function RecipeViewer({ recipe, onBack }) {
     }
   };
 
-  const handleCompleteRecipe = () => {
-    setShowCompletionConfirm(false);
-    alert('Recipe completed! Great job!');
-    // Optionally go back to saved recipes
-    // onBack();
+  const handleCompleteRecipe = async () => {
+    if (!recipe) return;
+    
+    setLoading(true);
+    setError('');
+    
+    try {
+      // Subtract used ingredients from inventory
+      await subtractRecipeIngredients(recipe.ingredients);
+      
+      setShowCompletionConfirm(false);
+      
+      // Notify parent component to refresh ingredients if callback provided
+      if (onIngredientsUpdated) {
+        onIngredientsUpdated();
+      }
+      
+      // Show success message and optionally go back
+      alert('Recipe completed! Your ingredient inventory has been updated.');
+      
+    } catch (error) {
+      console.error('Error updating inventory:', error);
+      setError('Failed to update inventory. Please check your ingredient quantities manually.');
+      // Still close the modal even if there's an error
+      setShowCompletionConfirm(false);
+    } finally {
+      setLoading(false);
+    }
   };
-
-  if (!recipe) {
-    return null;
-  }
-
   return (
     <div className="step recipe-details">
       <h2>{recipe.name}</h2>
@@ -168,21 +189,33 @@ function RecipeViewer({ recipe, onBack }) {
       {showCompletionConfirm && (
         <div className="recipe-completion-overlay">
           <div className="recipe-completion">
-            <h3>Recipe Complete!</h3>
-            <p>You've completed all steps of {recipe.name}!</p>
+            <h3>Complete Recipe and Update Inventory?</h3>
+            <p>You've completed all steps! This will subtract the used ingredients from your pantry.</p>
+            
+            <div className="ingredients-used">
+              <h4>Ingredients to be subtracted:</h4>
+              <ul>
+                {recipe.ingredients.map((ing, idx) => (
+                  <li key={idx}>
+                    {ing.quantity} {ing.unit} {ing.name}
+                  </li>
+                ))}
+              </ul>
+            </div>
             
             <div className="completion-buttons">
               <button 
                 className="cancel-button" 
                 onClick={() => setShowCompletionConfirm(false)}
               >
-                Continue Viewing
+                Cancel
               </button>
               <button 
                 className="confirm-button" 
                 onClick={handleCompleteRecipe}
+                disabled={loading}
               >
-                Complete Recipe
+                {loading ? 'Updating...' : 'Complete Recipe'}
               </button>
             </div>
           </div>
