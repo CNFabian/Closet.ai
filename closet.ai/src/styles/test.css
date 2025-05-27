@@ -215,3 +215,332 @@
     font-size: 11px;
   }
 }
+
+.edit-ingredient-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: all 0.2s ease;
+}
+
+.ingredient-card:hover .edit-ingredient-button {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.edit-ingredient-button:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.edit-ingredient-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.chip-edit-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px;
+  margin-left: 5px;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+}
+
+.chip-edit-button:hover:not(:disabled) {
+  background-color: rgba(0, 123, 255, 0.1);
+}
+
+.chip-edit-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Edit form overlay */
+.edit-form-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.edit-form {
+    color: black;
+  background: white;
+  border-radius: 8px;
+  padding: 25px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.edit-form h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #2c3e50;
+  text-align: center;
+  border-bottom: 2px solid orange;
+  padding-bottom: 10px;
+}
+
+.edit-form-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.edit-form-buttons .cancel-button {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+  flex: 1;
+}
+
+.edit-form-buttons .cancel-button:hover:not(:disabled) {
+  background-color: #5a6268;
+}
+
+.edit-form-buttons .save-button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+  flex: 1;
+}
+
+.edit-form-buttons .save-button:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.edit-form-buttons .save-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Save confirmation prompt */
+.save-prompt-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1100;
+}
+
+.save-prompt {
+  background: white;
+  border-radius: 8px;
+  padding: 25px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.save-prompt h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #2c3e50;
+  font-size: 1.3rem;
+}
+
+.save-prompt p {
+  color: #666;
+  margin-bottom: 25px;
+  line-height: 1.5;
+}
+
+.save-prompt-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.save-prompt-buttons .discard-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.save-prompt-buttons .discard-button:hover {
+  background-color: #c82333;
+}
+
+.save-prompt-buttons .save-button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.save-prompt-buttons .save-button:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.save-prompt-buttons .save-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Update ingredient card positioning for edit button */
+.ingredient-card {
+  position: relative;
+  padding-top: 35px; /* Make room for edit button */
+}
+
+/* Ensure ingredient cards have proper spacing */
+.ingredient-card .ingredient-name {
+  padding-right: 60px; /* Prevent text overlap with edit button */
+}
+
+/* Responsive adjustments for edit functionality */
+@media (max-width: 768px) {
+  .edit-form {
+    padding: 20px;
+    margin: 10px;
+  }
+  
+  .edit-form-buttons {
+    flex-direction: column;
+  }
+  
+  .edit-form-buttons .cancel-button,
+  .edit-form-buttons .save-button {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  
+  .save-prompt {
+    padding: 20px;
+    margin: 20px;
+  }
+  
+  .save-prompt-buttons {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .save-prompt-buttons .discard-button,
+  .save-prompt-buttons .save-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .edit-ingredient-button {
+    position: static;
+    margin-top: 8px;
+    opacity: 1;
+    transform: none;
+    width: 100%;
+    font-size: 12px;
+    padding: 6px;
+  }
+  
+  .ingredient-card {
+    padding-top: 15px;
+  }
+  
+  .ingredient-card .ingredient-name {
+    padding-right: 0;
+  }
+}
+
+/* Loading state for forms */
+.edit-form.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Animation for edit form */
+.edit-form-overlay {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.edit-form {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Success message styling */
+.message.success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+  padding: 10px;
+  border-radius: 4px;
+  margin: 15px 0;
+}
+
+.message.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  padding: 10px;
+  border-radius: 4px;
+  margin: 15px 0;
+}

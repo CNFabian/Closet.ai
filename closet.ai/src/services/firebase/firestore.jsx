@@ -15,6 +15,38 @@ import {
 } from 'firebase/firestore';
 import { db } from './config';
 
+// Update ingredient with all fields
+export const updateIngredient = async (ingredientId, ingredientData) => {
+  try {
+    const docRef = doc(db, 'ingredients', ingredientId);
+    
+    // Prepare the update data
+    const updateData = {
+      name: ingredientData.name,
+      quantity: parseFloat(ingredientData.quantity) || 0,
+      unit: ingredientData.unit || '',
+      category: ingredientData.category || 'Other',
+      updatedAt: Timestamp.now()
+    };
+
+    // Only add expiration date if it exists, otherwise remove it
+    if (ingredientData.expirationDate) {
+      updateData.expirationDate = ingredientData.expirationDate instanceof Date 
+        ? Timestamp.fromDate(ingredientData.expirationDate)
+        : Timestamp.fromDate(new Date(ingredientData.expirationDate));
+    } else {
+      // If no expiration date, explicitly remove it
+      updateData.expirationDate = null;
+    }
+
+    await updateDoc(docRef, updateData);
+    return true;
+  } catch (error) {
+    console.error('Error updating ingredient:', error);
+    throw error;
+  }
+};
+
 // Save a recipe to the savedRecipes collection
 export const saveRecipe = async (recipeData) => {
   try {

@@ -1,11 +1,18 @@
 import { useState } from 'react'
 import '../styles/test.css'
-import { addIngredient } from '../services/firebase/firestore'
+import { addIngredient, updateIngredient } from '../services/firebase/firestore'
 
 const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [displayMode, setDisplayMode] = useState('grid'); // 'grid', 'chips', 'category'
+  
+  // Edit mode states
+  const [editingId, setEditingId] = useState(null);
+  const [editData, setEditData] = useState({});
+  const [originalEditData, setOriginalEditData] = useState({});
+  const [showSavePrompt, setShowSavePrompt] = useState(false);
+
   const [formData, setFormData] = useState({
     name: '',
     quantity: '',
@@ -31,6 +38,107 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+  };
+
+  // Edit mode functions
+  const startEditing = (ingredient) => {
+    const expirationDate = ingredient.expirationDate ? 
+      (ingredient.expirationDate.toDate ? ingredient.expirationDate.toDate() : new Date(ingredient.expirationDate)) 
+      : null;
+    
+    const editFormData = {
+      name: ingredient.name,
+      quantity: ingredient.quantity.toString(),
+      unit: ingredient.unit,
+      category: ingredient.category || 'Other',
+      hasExpirationDate: !!expirationDate,
+      expirationDate: expirationDate ? expirationDate.toISOString().split('T')[0] : ''
+    };
+
+    setEditData(editFormData);
+    setOriginalEditData(JSON.parse(JSON.stringify(editFormData))); // Deep copy for comparison
+    setEditingId(ingredient.id);
+  };
+
+  const handleEditInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setEditData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const hasChanges = () => {
+    return JSON.stringify(editData) !== JSON.stringify(originalEditData);
+  };
+
+  const cancelEdit = () => {
+    if (hasChanges()) {
+      setShowSavePrompt(true);
+    } else {
+      setEditingId(null);
+      setEditData({});
+      setOriginalEditData({});
+    }
+  };
+
+  const discardChanges = () => {
+    setEditingId(null);
+    setEditData({});
+    setOriginalEditData({});
+    setShowSavePrompt(false);
+  };
+
+  const saveChanges = async () => {
+    if (!editData.name.trim()) {
+      setMessage('Please enter an ingredient name');
+      return;
+    }
+
+    if (!editData.quantity || parseFloat(editData.quantity) <= 0) {
+      setMessage('Please enter a valid quantity');
+      return;
+    }
+
+    if (editData.hasExpirationDate && !editData.expirationDate) {
+      setMessage('Please enter an expiration date or disable the expiration date option');
+      return;
+    }
+
+    setLoading(true);
+    setMessage('');
+
+    try {
+      const updateData = {
+        name: editData.name.trim(),
+        quantity: parseFloat(editData.quantity),
+        unit: editData.unit,
+        category: editData.category
+      };
+
+      if (editData.hasExpirationDate && editData.expirationDate) {
+        updateData.expirationDate = new Date(editData.expirationDate);
+      } else {
+        updateData.expirationDate = null;
+      }
+
+      await updateIngredient(editingId, updateData);
+
+      if (updateIngredients) {
+        await updateIngredients();
+      }
+
+      setMessage('Ingredient updated successfully!');
+      setEditingId(null);
+      setEditData({});
+      setOriginalEditData({});
+      setShowSavePrompt(false);
+    } catch (error) {
+      console.error("Error updating ingredient: ", error);
+      setMessage('Error updating ingredient. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getTodayDate = () => {
@@ -121,6 +229,127 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
     return groups;
   }, {});
 
+  // Render edit form for an ingredient
+  const renderEditForm = (ingredient) => (
+    <div className="edit-form-overlay">
+      <div className="edit-form">
+        <h3>Edit {ingredient.name}</h3>
+        
+        <div className="form-group">
+          <label htmlFor="edit-name">Ingredient Name:</label>
+          <input 
+            type="text"
+            id="edit-name"
+            name="name"
+            value={editData.name}
+            onChange={handleEditInputChange}
+            placeholder="e.g., Tomatoes, Rice, Chicken..."
+            required
+          />
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="edit-quantity">Quantity:</label>
+            <input 
+              type="number"
+              id="edit-quantity"
+              name="quantity"
+              value={editData.quantity}
+              onChange={handleEditInputChange}
+              placeholder="e.g., 2"
+              min="0.1"
+              step="0.1"
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="edit-unit">Unit:</label>
+            <select 
+              id="edit-unit"
+              name="unit"
+              value={editData.unit}
+              onChange={handleEditInputChange}
+            >
+              {units.map(unit => (
+                <option key={unit} value={unit}>{unit}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="edit-category">Category:</label>
+          <select 
+            id="edit-category"
+            name="category"
+            value={editData.category}
+            onChange={handleEditInputChange}
+          >
+            {categories.map(category => (
+              <option key={category} value={category}>{category}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-group">
+          <div className="toggle-container">
+            <label htmlFor="edit-hasExpirationDate" className="toggle-label">
+              <input
+                type="checkbox"
+                id="edit-hasExpirationDate"
+                name="hasExpirationDate"
+                checked={editData.hasExpirationDate}
+                onChange={handleEditInputChange}
+                className="toggle-checkbox"
+              />
+              <span className="toggle-switch"></span>
+              Add Expiration Date
+            </label>
+          </div>
+        </div>
+
+        {editData.hasExpirationDate && (
+          <div className="form-group expiration-date-group">
+            <label htmlFor="edit-expirationDate">Expiration Date:</label>
+            <input 
+              type="date"
+              id="edit-expirationDate"
+              name="expirationDate"
+              value={editData.expirationDate}
+              onChange={handleEditInputChange}
+              min={getTodayDate()}
+              required={editData.hasExpirationDate}
+            />
+            <small className="date-help-text">
+              Choose when this ingredient will expire
+            </small>
+          </div>
+        )}
+
+        <div className="edit-form-buttons">
+          <button 
+            type="button"
+            onClick={cancelEdit}
+            className="cancel-button"
+            disabled={loading}
+          >
+            Cancel
+          </button>
+          <button 
+            type="button"
+            onClick={saveChanges}
+            disabled={loading || !hasChanges()}
+            className="save-button"
+          >
+            {loading ? 'Saving...' : 'Save Changes'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   // Render ingredients in grid format
   const renderGridView = () => (
     <div className="ingredients-grid">
@@ -149,6 +378,13 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
                 {expiring && !expired && <span className="status-text"> (EXPIRES SOON)</span>}
               </div>
             )}
+            <button 
+              className="edit-ingredient-button"
+              onClick={() => startEditing(ingredient)}
+              disabled={editingId !== null}
+            >
+              ✏️ Edit
+            </button>
           </div>
         );
       })}
@@ -177,6 +413,14 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
                 {expired ? '⚠️' : '⏰'}
               </span>
             )}
+            <button 
+              className="chip-edit-button"
+              onClick={() => startEditing(ingredient)}
+              disabled={editingId !== null}
+              title="Edit ingredient"
+            >
+              ✏️
+            </button>
           </div>
         );
       })}
@@ -206,6 +450,14 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
                       {expired ? '⚠️' : '⏰'}
                     </span>
                   )}
+                  <button 
+                    className="chip-edit-button"
+                    onClick={() => startEditing(ingredient)}
+                    disabled={editingId !== null}
+                    title="Edit ingredient"
+                  >
+                    ✏️
+                  </button>
                 </div>
               );
             })}
@@ -317,7 +569,7 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
 
         <button 
           type="submit"
-          disabled={loading}
+          disabled={loading || editingId !== null}
           className="submit-button"
         >
           {loading ? 'Adding...' : 'Add Ingredient'}
@@ -337,6 +589,7 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
             <select 
               value={displayMode} 
               onChange={(e) => setDisplayMode(e.target.value)}
+              disabled={editingId !== null}
               style={{ 
                 padding: '5px 10px', 
                 borderRadius: '4px', 
@@ -351,7 +604,7 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
           </div>
         </div>
         
-      {cachedIngredients.length > 0 ? (
+        {cachedIngredients.length > 0 ? (
           <>
             {displayMode === 'grid' && renderGridView()}
             {displayMode === 'chips' && renderChipsView()}
@@ -361,6 +614,36 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
           <p>No ingredients in your pantry yet.</p>
         )}
       </div>
+
+      {/* Edit form overlay */}
+      {editingId && (
+        renderEditForm(cachedIngredients.find(ing => ing.id === editingId))
+      )}
+
+      {/* Save confirmation prompt */}
+      {showSavePrompt && (
+        <div className="save-prompt-overlay">
+          <div className="save-prompt">
+            <h3>Save Changes?</h3>
+            <p>You have unsaved changes. Do you want to save them before closing?</p>
+            <div className="save-prompt-buttons">
+              <button 
+                onClick={discardChanges}
+                className="discard-button"
+              >
+                Discard Changes
+              </button>
+              <button 
+                onClick={saveChanges}
+                className="save-button"
+                disabled={loading}
+              >
+                {loading ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
