@@ -5,6 +5,7 @@ import { addIngredient } from '../services/firebase/firestore'
 const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [displayMode, setDisplayMode] = useState('grid'); // 'grid', 'chips', 'category'
   const [formData, setFormData] = useState({
     name: '',
     quantity: '',
@@ -32,13 +33,11 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
     }));
   };
 
-  // Get today's date in YYYY-MM-DD format for the min attribute
   const getTodayDate = () => {
     const today = new Date();
     return today.toISOString().split('T')[0];
   };
 
-  // Check if expiration date is soon (within 7 days)
   const isExpiringSoon = (expirationDate) => {
     if (!expirationDate) return false;
     const expDate = new Date(expirationDate);
@@ -48,7 +47,6 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
     return diffDays <= 7 && diffDays >= 0;
   };
 
-  // Check if expired
   const isExpired = (expirationDate) => {
     if (!expirationDate) return false;
     const expDate = new Date(expirationDate);
@@ -69,7 +67,6 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
       return;
     }
 
-    // Validate expiration date if enabled
     if (formData.hasExpirationDate && !formData.expirationDate) {
       setMessage('Please enter an expiration date or disable the expiration date option');
       return;
@@ -86,21 +83,18 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
         category: formData.category
       };
 
-      // Only add expiration date if the toggle is enabled
       if (formData.hasExpirationDate && formData.expirationDate) {
         ingredientData.expirationDate = new Date(formData.expirationDate);
       }
 
       await addIngredient(ingredientData);
 
-      // Call the updateIngredients function to refresh the ingredients
       if (updateIngredients) {
         await updateIngredients();
       }
 
       setMessage('Ingredient added successfully!');
       
-      // Reset form
       setFormData({
         name: '',
         quantity: '',
@@ -116,6 +110,110 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
       setLoading(false);
     }
   };
+
+  // Group ingredients by category
+  const groupedIngredients = cachedIngredients.reduce((groups, ingredient) => {
+    const category = ingredient.category || 'Other';
+    if (!groups[category]) {
+      groups[category] = [];
+    }
+    groups[category].push(ingredient);
+    return groups;
+  }, {});
+
+  // Render ingredients in grid format
+  const renderGridView = () => (
+    <div className="ingredients-grid">
+      {cachedIngredients.map((ingredient) => {
+        const expiring = ingredient.expirationDate && isExpiringSoon(ingredient.expirationDate.toDate ? ingredient.expirationDate.toDate() : ingredient.expirationDate);
+        const expired = ingredient.expirationDate && isExpired(ingredient.expirationDate.toDate ? ingredient.expirationDate.toDate() : ingredient.expirationDate);
+        
+        return (
+          <div 
+            key={ingredient.id} 
+            className={`ingredient-card ${expired ? 'expired' : expiring ? 'expiring-soon' : ''}`}
+          >
+            <div className="ingredient-name">{ingredient.name}</div>
+            <div className="ingredient-quantity">
+              {ingredient.quantity} {ingredient.unit}
+            </div>
+            {ingredient.category && (
+              <div className="ingredient-category">{ingredient.category}</div>
+            )}
+            {ingredient.expirationDate && (
+              <div className={`ingredient-expiration ${expired ? 'expired' : expiring ? 'expiring' : ''}`}>
+                Expires: {ingredient.expirationDate.toDate ? 
+                  ingredient.expirationDate.toDate().toLocaleDateString() : 
+                  new Date(ingredient.expirationDate).toLocaleDateString()}
+                {expired && <span className="status-text"> (EXPIRED)</span>}
+                {expiring && !expired && <span className="status-text"> (EXPIRES SOON)</span>}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  // Render ingredients as chips
+  const renderChipsView = () => (
+    <div className="ingredients-list-compact">
+      {cachedIngredients.map((ingredient) => {
+        const expiring = ingredient.expirationDate && isExpiringSoon(ingredient.expirationDate.toDate ? ingredient.expirationDate.toDate() : ingredient.expirationDate);
+        const expired = ingredient.expirationDate && isExpired(ingredient.expirationDate.toDate ? ingredient.expirationDate.toDate() : ingredient.expirationDate);
+        
+        return (
+          <div 
+            key={ingredient.id} 
+            className={`ingredient-chip ${expired ? 'expired' : expiring ? 'expiring-soon' : ''}`}
+          >
+            <span className="chip-name">{ingredient.name}</span>
+            <span className="chip-quantity">{ingredient.quantity} {ingredient.unit}</span>
+            {ingredient.category && ingredient.category !== 'Other' && (
+              <span className="chip-category">{ingredient.category}</span>
+            )}
+            {(expired || expiring) && (
+              <span className="expiration-indicator">
+                {expired ? '⚠️' : '⏰'}
+              </span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  // Render ingredients grouped by category
+  const renderCategoryView = () => (
+    <div className="ingredients-by-category">
+      {Object.entries(groupedIngredients).map(([category, ingredients]) => (
+        <div key={category} className="category-section">
+          <div className="category-header">{category} ({ingredients.length})</div>
+          <div className="category-items">
+            {ingredients.map((ingredient) => {
+              const expiring = ingredient.expirationDate && isExpiringSoon(ingredient.expirationDate.toDate ? ingredient.expirationDate.toDate() : ingredient.expirationDate);
+              const expired = ingredient.expirationDate && isExpired(ingredient.expirationDate.toDate ? ingredient.expirationDate.toDate() : ingredient.expirationDate);
+              
+              return (
+                <div 
+                  key={ingredient.id} 
+                  className={`ingredient-chip ${expired ? 'expired' : expiring ? 'expiring-soon' : ''}`}
+                >
+                  <span className="chip-name">{ingredient.name}</span>
+                  <span className="chip-quantity">{ingredient.quantity} {ingredient.unit}</span>
+                  {(expired || expiring) && (
+                    <span className="expiration-indicator">
+                      {expired ? '⚠️' : '⏰'}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
   
   return (
     <div className="box">
@@ -182,7 +280,6 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
           </select>
         </div>
 
-        {/* Expiration Date Toggle */}
         <div className="form-group">
           <div className="toggle-container">
             <label htmlFor="hasExpirationDate" className="toggle-label">
@@ -200,7 +297,6 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
           </div>
         </div>
 
-        {/* Expiration Date Input - Only show when toggle is enabled */}
         {formData.hasExpirationDate && (
           <div className="form-group expiration-date-group">
             <label htmlFor="expirationDate">Expiration Date:</label>
@@ -230,45 +326,37 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
       
       {message && <p className="message">{message}</p>}
       
-      {/* Display cached ingredients with quantities and expiration dates */}
+      {/* Display cached ingredients with view options */}
       <div className="cached-ingredients">
-        <h2>Your Pantry Inventory:</h2>
-        {cachedIngredients.length > 0 ? (
-          <div className="ingredients-grid">
-            {cachedIngredients.map((ingredient) => {
-              const expiring = ingredient.expirationDate && isExpiringSoon(ingredient.expirationDate.toDate ? ingredient.expirationDate.toDate() : ingredient.expirationDate);
-              const expired = ingredient.expirationDate && isExpired(ingredient.expirationDate.toDate ? ingredient.expirationDate.toDate() : ingredient.expirationDate);
-              
-              return (
-                <div 
-                  key={ingredient.id} 
-                  className={`ingredient-card ${expired ? 'expired' : expiring ? 'expiring-soon' : ''}`}
-                >
-                  <div className="ingredient-name">{ingredient.name}</div>
-                  <div className="ingredient-quantity">
-                    {ingredient.quantity} {ingredient.unit}
-                  </div>
-                  {ingredient.category && (
-                    <div className="ingredient-category">{ingredient.category}</div>
-                  )}
-                  {ingredient.expirationDate && (
-                    <div className={`ingredient-expiration ${expired ? 'expired' : expiring ? 'expiring' : ''}`}>
-                      Expires: {ingredient.expirationDate.toDate ? 
-                        ingredient.expirationDate.toDate().toLocaleDateString() : 
-                        new Date(ingredient.expirationDate).toLocaleDateString()}
-                      {expired && <span className="status-text"> (EXPIRED)</span>}
-                      {expiring && !expired && <span className="status-text"> (EXPIRES SOON)</span>}
-                    </div>
-                  )}
-                  {ingredient.createdAt && ingredient.createdAt.toDate && (
-                    <div className="ingredient-date">
-                      Added: {new Date(ingredient.createdAt.toDate()).toLocaleDateString()}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h2>Your Pantry Inventory ({cachedIngredients.length} items):</h2>
+          
+          {/* Display mode selector */}
+          <div className="display-mode-selector">
+            <label style={{ marginRight: '10px', fontSize: '14px', color: '#666' }}>View:</label>
+            <select 
+              value={displayMode} 
+              onChange={(e) => setDisplayMode(e.target.value)}
+              style={{ 
+                padding: '5px 10px', 
+                borderRadius: '4px', 
+                border: '1px solid #ddd',
+                fontSize: '14px'
+              }}
+            >
+              <option value="grid">Grid View</option>
+              <option value="chips">Compact Chips</option>
+              <option value="category">By Category</option>
+            </select>
           </div>
+        </div>
+        
+      {cachedIngredients.length > 0 ? (
+          <>
+            {displayMode === 'grid' && renderGridView()}
+            {displayMode === 'chips' && renderChipsView()}
+            {displayMode === 'category' && renderCategoryView()}
+          </>
         ) : (
           <p>No ingredients in your pantry yet.</p>
         )}
