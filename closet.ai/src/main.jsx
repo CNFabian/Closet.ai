@@ -9,10 +9,11 @@ import Register from './components/Auth/Register'
 import Header from './components/Header'
 import TestComponent from './pages/firestoreTest.jsx'
 import GeminiChat from './components/geminiChat.jsx'
-import SavedRecipes from './components/SavedRecipes.jsx'
+import SavedRecipes from './components/savedRecipes.jsx'
 import RecipeViewer from './components/RecipeViewer.jsx'
 import { getCollection } from './services/firebase/firestore'
 import { useAuth } from './context/AuthContext'
+import ErrorBoundary from './components/ErrorBoundary'
 
 function MainApp() {
   const { currentUser, isAuthenticated } = useAuth()
@@ -144,6 +145,8 @@ function App() {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 );
