@@ -14,6 +14,8 @@ import RecipeViewer from './components/RecipeViewer.jsx'
 import { getCollection } from './services/firebase/firestore'
 import { useAuth } from './context/AuthContext'
 import ErrorBoundary from './components/ErrorBoundary'
+import History from './components/History.jsx'
+
 
 function MainApp() {
   const { currentUser, isAuthenticated } = useAuth()
@@ -95,6 +97,12 @@ function MainApp() {
         >
           Saved Recipes
         </button>
+        <button 
+          className={`tab ${activeView === 'history' ? 'active' : ''}`}
+          onClick={() => setActiveView('history')}
+        >
+          Activity History
+        </button>
       </div>
 
       {/* Conditional rendering based on active view */}
@@ -119,6 +127,10 @@ function MainApp() {
           onBack={() => setActiveView('savedRecipes')} 
           onIngredientsUpdated={updateIngredients}
         />
+      )}
+      
+      {activeView === 'history' && (
+        <History />
       )}
     </>
   );

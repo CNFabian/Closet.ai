@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { subtractRecipeIngredients } from '../services/firebase/firestore';
 
-function RecipeViewer({ recipe, onBack }) {
+function RecipeViewer({ recipe, onBack, onIngredientsUpdated }) {
   const [currentInstructionIndex, setCurrentInstructionIndex] = useState(0);
   const [showCompletionConfirm, setShowCompletionConfirm] = useState(false);
   const [loading, setLoading] = useState(false);

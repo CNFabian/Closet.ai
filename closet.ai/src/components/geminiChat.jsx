@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { geminiService } from '../services/gemini/gemini';
-import { saveRecipe, validateRecipeIngredients, subtractRecipeIngredients } from '../services/firebase/firestore';
-
+import { saveRecipe, validateRecipeIngredients, subtractRecipeIngredients, addHistoryEntry } from '../services/firebase/firestore';
 const STEPS = {
   SELECT_MEAL_TYPE: 0,
   RECIPE_SUGGESTIONS: 1,
@@ -108,42 +107,65 @@ function GeminiChat({ ingredients = [] }) {
     }
   };
 
-  // Step 2: Validate and get recipe details
-  const handleRecipeSelect = async (recipe) => {
-    setSelectedRecipe(recipe);
-    setLoading(true);
-    setError('');
+// Step 2: Validate and get recipe details
+const handleRecipeSelect = async (recipe) => {
+  setSelectedRecipe(recipe);
+  setLoading(true);
+  setError('');
+  
+  try {
+    // First validate that we can make this recipe with available ingredients
+    setCurrentStep(STEPS.RECIPE_VALIDATION);
     
-    try {
-      // First validate that we can make this recipe with available ingredients
-      setCurrentStep(STEPS.RECIPE_VALIDATION);
+    const result = await geminiService.getRecipeDetails(recipe, ingredients, temperature);
+    
+    if (result.json && result.json.recipe) {
+      // Set recipe data first
+      setRecipeData(result.json.recipe);
       
-      const result = await geminiService.getRecipeDetails(recipe, ingredients, temperature);
-      
-      if (result.json && result.json.recipe) {
-        // Validate the recipe against available ingredients
-        const validation = await validateRecipeIngredients(result.json.recipe.ingredients);
-        setRecipeValidation(validation);
-        
-        if (validation.canMake) {
-          setRecipeData(result.json.recipe);
-          setCurrentStep(STEPS.RECIPE_DETAILS);
-          setCurrentInstructionIndex(0);
-        } else {
-          // Show validation issues but still allow user to proceed if they want
-          setRecipeData(result.json.recipe);
-          setCurrentStep(STEPS.RECIPE_VALIDATION);
-        }
-      } else {
-        throw new Error('Failed to get recipe details in the correct format. Please try again.');
+      // Track recipe generation in history (only once, after successful generation)
+      try {
+        await addHistoryEntry({
+          type: 'recipe_generated',
+          action: 'Generated recipe',
+          details: {
+            recipeName: recipe,
+            mealType: mealType,
+            ingredientCount: ingredients.length,
+            generatedRecipe: {
+              name: result.json.recipe.name,
+              difficulty: result.json.recipe.difficulty,
+              servings: result.json.recipe.servings
+            }
+          },
+          description: `Generated ${mealType} recipe: ${result.json.recipe.name}`
+        });
+      } catch (historyError) {
+        // Log history error but don't fail the recipe generation
+        console.error('Error adding history entry:', historyError);
       }
-    } catch (error) {
-      console.error('Error getting recipe details:', error);
-      setError(error.message || 'Failed to get recipe details. Please try again.');
-    } finally {
-      setLoading(false);
+      
+      // Validate the recipe against available ingredients
+      const validation = await validateRecipeIngredients(result.json.recipe.ingredients);
+      setRecipeValidation(validation);
+      
+      if (validation.canMake) {
+        setCurrentStep(STEPS.RECIPE_DETAILS);
+        setCurrentInstructionIndex(0);
+      } else {
+        // Show validation issues but still allow user to proceed if they want
+        setCurrentStep(STEPS.RECIPE_VALIDATION);
+      }
+    } else {
+      throw new Error('Failed to get recipe details in the correct format. Please try again.');
     }
-  };
+  } catch (error) {
+    console.error('Error getting recipe details:', error);
+    setError(error.message || 'Failed to get recipe details. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Proceed with recipe despite validation issues
   const proceedWithRecipe = () => {
