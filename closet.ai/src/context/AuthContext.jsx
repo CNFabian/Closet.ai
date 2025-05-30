@@ -4,7 +4,13 @@ import { onAuthStateChanged } from 'firebase/auth';
 
 const AuthContext = createContext();
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -12,6 +18,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log('Auth state changed:', user ? 'User logged in' : 'User logged out');
       setCurrentUser(user);
       setLoading(false);
     });
@@ -21,7 +28,8 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     currentUser,
-    isAuthenticated: !!currentUser
+    isAuthenticated: !!currentUser,
+    loading
   };
 
   return (

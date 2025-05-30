@@ -14,11 +14,28 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db } from './config';
+import { auth } from './config';
 
-// Update ingredient with all fields
+// Helper function to get current user ID
+const getCurrentUserId = () => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+  return user.uid;
+};
+
+// Update ingredient with all fields (user-specific)
 export const updateIngredient = async (ingredientId, ingredientData) => {
   try {
+    const userId = getCurrentUserId();
     const docRef = doc(db, 'ingredients', ingredientId);
+    
+    // First check if the ingredient belongs to the current user
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists() || docSnap.data().userId !== userId) {
+      throw new Error('Ingredient not found or access denied');
+    }
     
     // Prepare the update data
     const updateData = {
@@ -26,7 +43,8 @@ export const updateIngredient = async (ingredientId, ingredientData) => {
       quantity: parseFloat(ingredientData.quantity) || 0,
       unit: ingredientData.unit || '',
       category: ingredientData.category || 'Other',
-      updatedAt: Timestamp.now()
+      updatedAt: Timestamp.now(),
+      userId: userId // Ensure userId is maintained
     };
 
     // Only add expiration date if it exists, otherwise remove it
@@ -47,11 +65,14 @@ export const updateIngredient = async (ingredientId, ingredientData) => {
   }
 };
 
-// Save a recipe to the savedRecipes collection
+// Save a recipe to the savedRecipes collection (user-specific)
 export const saveRecipe = async (recipeData) => {
   try {
+    const userId = getCurrentUserId();
+    
     const docRef = await addDoc(collection(db, 'savedRecipes'), {
       ...recipeData,
+      userId: userId,
       savedAt: Timestamp.now()
     });
     return docRef.id;
@@ -61,11 +82,17 @@ export const saveRecipe = async (recipeData) => {
   }
 };
 
-// Get saved recipes
+// Get saved recipes (user-specific)
 export const getSavedRecipes = async () => {
   try {
+    const userId = getCurrentUserId();
+    
     const querySnapshot = await getDocs(
-      query(collection(db, 'savedRecipes'), orderBy('savedAt', 'desc'))
+      query(
+        collection(db, 'savedRecipes'), 
+        where('userId', '==', userId),
+        orderBy('savedAt', 'desc')
+      )
     );
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
@@ -77,15 +104,18 @@ export const getSavedRecipes = async () => {
   }
 };
 
-// Add ingredient with quantity tracking
+// Add ingredient with quantity tracking (user-specific)
 export const addIngredient = async (ingredientData) => {
   try {
+    const userId = getCurrentUserId();
+    
     const docRef = await addDoc(collection(db, 'ingredients'), {
       name: ingredientData.name,
       quantity: parseFloat(ingredientData.quantity) || 0,
       unit: ingredientData.unit || '',
       category: ingredientData.category || 'Other',
       expirationDate: ingredientData.expirationDate || null,
+      userId: userId,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now()
     });
@@ -96,10 +126,18 @@ export const addIngredient = async (ingredientData) => {
   }
 };
 
-// Update ingredient quantity
+// Update ingredient quantity (user-specific)
 export const updateIngredientQuantity = async (ingredientId, newQuantity) => {
   try {
+    const userId = getCurrentUserId();
     const docRef = doc(db, 'ingredients', ingredientId);
+    
+    // First check if the ingredient belongs to the current user
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists() || docSnap.data().userId !== userId) {
+      throw new Error('Ingredient not found or access denied');
+    }
+    
     await updateDoc(docRef, {
       quantity: parseFloat(newQuantity),
       updatedAt: Timestamp.now()
@@ -111,13 +149,40 @@ export const updateIngredientQuantity = async (ingredientId, newQuantity) => {
   }
 };
 
-// Subtract ingredients used in recipe (batch operation for consistency)
+// Delete ingredient (user-specific)
+export const deleteIngredient = async (ingredientId) => {
+  try {
+    const userId = getCurrentUserId();
+    const docRef = doc(db, 'ingredients', ingredientId);
+    
+    // First check if the ingredient belongs to the current user
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists() || docSnap.data().userId !== userId) {
+      throw new Error('Ingredient not found or access denied');
+    }
+    
+    await deleteDoc(docRef);
+    return true;
+  } catch (error) {
+    console.error('Error deleting ingredient:', error);
+    throw error;
+  }
+};
+
+// Subtract ingredients used in recipe (batch operation for consistency) - user-specific
 export const subtractRecipeIngredients = async (usedIngredients) => {
   try {
+    const userId = getCurrentUserId();
     const batch = writeBatch(db);
     
-    // Get current ingredient quantities
-    const ingredientsSnapshot = await getDocs(collection(db, 'ingredients'));
+    // Get current user's ingredient quantities
+    const ingredientsSnapshot = await getDocs(
+      query(
+        collection(db, 'ingredients'),
+        where('userId', '==', userId)
+      )
+    );
+    
     const currentIngredients = {};
     
     ingredientsSnapshot.docs.forEach(doc => {
@@ -189,10 +254,18 @@ const convertUnits = (quantity, fromUnit, toUnit) => {
   return quantity;
 };
 
-// Check if recipe can be made with available ingredients
+// Check if recipe can be made with available ingredients (user-specific)
 export const validateRecipeIngredients = async (recipeIngredients) => {
   try {
-    const ingredientsSnapshot = await getDocs(collection(db, 'ingredients'));
+    const userId = getCurrentUserId();
+    
+    const ingredientsSnapshot = await getDocs(
+      query(
+        collection(db, 'ingredients'),
+        where('userId', '==', userId)
+      )
+    );
+    
     const availableIngredients = {};
     
     ingredientsSnapshot.docs.forEach(doc => {
@@ -249,10 +322,18 @@ export const validateRecipeIngredients = async (recipeIngredients) => {
   }
 };
 
-// Get all ingredients with quantities
+// Get all ingredients with quantities (user-specific)
 export const getIngredientsWithQuantities = async () => {
   try {
-    const querySnapshot = await getDocs(collection(db, 'ingredients'));
+    const userId = getCurrentUserId();
+    
+    const querySnapshot = await getDocs(
+      query(
+        collection(db, 'ingredients'),
+        where('userId', '==', userId)
+      )
+    );
+    
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
@@ -263,11 +344,14 @@ export const getIngredientsWithQuantities = async () => {
   }
 };
 
-// Legacy support - keeping existing functions
+// Updated legacy support functions with user authorization
 export const addDocument = async (collectionName, data) => {
   try {
+    const userId = getCurrentUserId();
+    
     const docRef = await addDoc(collection(db, collectionName), {
       name: data,
+      userId: userId,
       createdAt: Timestamp.now()
     });
     return docRef.id;
@@ -278,11 +362,17 @@ export const addDocument = async (collectionName, data) => {
 
 export const getDocument = async (collectionName, docId) => {
   try {
+    const userId = getCurrentUserId();
     const docRef = doc(db, collectionName, docId);
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() };
+      const data = docSnap.data();
+      // Check if document belongs to current user
+      if (data.userId !== userId) {
+        throw new Error('Access denied');
+      }
+      return { id: docSnap.id, ...data };
     } else {
       return null;
     }
@@ -291,10 +381,19 @@ export const getDocument = async (collectionName, docId) => {
   }
 };
 
-export const getCollection = async (collectionName) => {
+// Updated getCollection to be user-specific
+export const getCollection = async (collectionName, userIdOverride = null) => {
   const array = [];
   try {
-    const querySnapshot = await getDocs(collection(db, collectionName));
+    const userId = userIdOverride || getCurrentUserId();
+    
+    const querySnapshot = await getDocs(
+      query(
+        collection(db, collectionName),
+        where('userId', '==', userId)
+      )
+    );
+    
     querySnapshot.forEach((doc) => {
       array.push({ id: doc.id, ...doc.data() });
     });
@@ -305,9 +404,15 @@ export const getCollection = async (collectionName) => {
   }
 };
 
+// Updated queryDocuments to be user-specific
 export const queryDocuments = async (collectionName, conditions = [], sortBy = null, limitTo = null) => {
   try {
+    const userId = getCurrentUserId();
+    
     let q = collection(db, collectionName);
+    
+    // Always add user filter first
+    q = query(q, where('userId', '==', userId));
     
     if (conditions.length > 0) {
       conditions.forEach(condition => {
@@ -335,7 +440,15 @@ export const queryDocuments = async (collectionName, conditions = [], sortBy = n
 
 export const updateDocument = async (collectionName, docId, data) => {
   try {
+    const userId = getCurrentUserId();
     const docRef = doc(db, collectionName, docId);
+    
+    // First check if the document belongs to the current user
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists() || docSnap.data().userId !== userId) {
+      throw new Error('Document not found or access denied');
+    }
+    
     await updateDoc(docRef, {
       ...data,
       updatedAt: Timestamp.now()
@@ -348,7 +461,15 @@ export const updateDocument = async (collectionName, docId, data) => {
 
 export const deleteDocument = async (collectionName, docId) => {
   try {
+    const userId = getCurrentUserId();
     const docRef = doc(db, collectionName, docId);
+    
+    // First check if the document belongs to the current user
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists() || docSnap.data().userId !== userId) {
+      throw new Error('Document not found or access denied');
+    }
+    
     await deleteDoc(docRef);
     return true;
   } catch (error) {

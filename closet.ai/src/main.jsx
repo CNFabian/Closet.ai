@@ -1,40 +1,57 @@
 import { StrictMode, useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import './index.css'
+import { AuthProvider } from './context/AuthContext'
+import PrivateRoute from './components/Auth/PrivateRoute'
+import Login from './components/Auth/Login'
+import Register from './components/Auth/Register'
+import Header from './components/Header'
 import TestComponent from './pages/firestoreTest.jsx'
-import Header from './components/Header.jsx'
 import GeminiChat from './components/geminiChat.jsx'
 import SavedRecipes from './components/SavedRecipes.jsx'
 import RecipeViewer from './components/RecipeViewer.jsx'
 import { getCollection } from './services/firebase/firestore'
+import { useAuth } from './context/AuthContext'
 
-function App() {
+function MainApp() {
+  const { currentUser, isAuthenticated } = useAuth()
   const [ingredients, setIngredients] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState('ingredients'); // 'ingredients', 'recipes', 'savedRecipes', 'viewRecipe'
+  const [activeView, setActiveView] = useState('ingredients');
   const [selectedSavedRecipe, setSelectedSavedRecipe] = useState(null);
   
-  // Fetch ingredients on mount
+  // Fetch user's ingredients when user changes or on mount
   useEffect(() => {
-    const fetchIngredients = async () => {
-      try {
-        const fetchedIngredients = await getCollection("ingredients");
-        setIngredients(fetchedIngredients);
-      } catch (error) {
-        console.error("Error fetching ingredients:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (currentUser) {
+      fetchUserIngredients();
+    } else {
+      setIngredients([]);
+      setLoading(false);
+    }
+  }, [currentUser]);
+  
+  const fetchUserIngredients = async () => {
+    if (!currentUser) return;
     
-    fetchIngredients();
-  }, []);
+    try {
+      setLoading(true);
+      const fetchedIngredients = await getCollection("ingredients", currentUser.uid);
+      setIngredients(fetchedIngredients);
+    } catch (error) {
+      console.error("Error fetching ingredients:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
   
   // Function to update ingredients
   const updateIngredients = async () => {
+    if (!currentUser) return;
+    
     try {
       setLoading(true);
-      const fetchedIngredients = await getCollection("ingredients");
+      const fetchedIngredients = await getCollection("ingredients", currentUser.uid);
       setIngredients(fetchedIngredients);
     } catch (error) {
       console.error("Error fetching ingredients:", error);
@@ -48,6 +65,10 @@ function App() {
     setSelectedSavedRecipe(recipe);
     setActiveView('viewRecipe');
   };
+
+  if (loading) {
+    return <div className="loading-spinner">Loading...</div>;
+  }
   
   return (
     <>
@@ -99,6 +120,25 @@ function App() {
         />
       )}
     </>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/" element={
+            <PrivateRoute>
+              <MainApp />
+            </PrivateRoute>
+          } />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 
