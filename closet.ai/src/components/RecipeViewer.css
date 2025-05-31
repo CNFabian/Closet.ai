@@ -149,3 +149,94 @@
 .ingredients-used li:last-child {
   border-bottom: none;
 }
+
+/* Missing adjustment notice styling */
+.adjustment-notice {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+  border: 1px solid #ffc107;
+  border-left: 4px solid #ff8a00;
+  border-radius: 8px;
+  padding: 15px;
+  margin: 15px 0;
+  color: #856404;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.2);
+}
+
+.adjustment-notice p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.adjustment-notice strong {
+  color: #b8860b;
+  font-weight: 700;
+}
+
+/* Missing meta value styling */
+.meta-value {
+  color: #495057;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+/* Enhanced navigation button states */
+.nav-button.next {
+  background: linear-gradient(135deg, orange 0%, #ff8a00 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 2px 8px rgba(255, 165, 0, 0.3);
+}
+
+.nav-button.next:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ff8a00 0%, #e55a00 100%);
+  box-shadow: 0 4px 12px rgba(255, 165, 0, 0.4);
+  transform: translateY(-1px);
+}
+
+.nav-button.prev {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
+}
+
+.nav-button.prev:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+  transform: translateY(-1px);
+}
+
+/* Enhanced instruction meta styling */
+.instruction-meta .meta-label {
+  color: #6c757d;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.instruction-meta .meta-value {
+  color: #495057;
+  font-weight: 500;
+  font-style: italic;
+}
+
+/* Improved instruction meta sections */
+.instruction-ingredients,
+.instruction-equipment {
+  background-color: #f8f9fa;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+  margin-bottom: 8px;
+}
+
+.instruction-ingredients .meta-label {
+  color: #28a745;
+}
+
+.instruction-equipment .meta-label {
+  color: #17a2b8;
+}

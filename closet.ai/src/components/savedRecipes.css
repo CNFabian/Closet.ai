@@ -122,6 +122,44 @@
   margin-bottom: 15px;
 }
 
+/* Missing recipe meta item styles */
+.saved-recipes .recipe-meta .time {
+  background-color: #e3f2fd;
+  color: #1565c0;
+  border-color: #bbdefb;
+  font-weight: 600;
+}
+
+.saved-recipes .recipe-meta .servings {
+  background-color: #f3e5f5;
+  color: #7b1fa2;
+  border-color: #e1bee7;
+  font-weight: 600;
+}
+
+/* Enhanced meta item hover effects */
+.saved-recipes .recipe-meta span:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.saved-recipes .recipe-meta .difficulty:hover {
+  background-color: #e55a00;
+  box-shadow: 0 2px 8px rgba(255, 165, 0, 0.3);
+}
+
+.saved-recipes .recipe-meta .time:hover {
+  background-color: #1976d2;
+  color: white;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
+}
+
+.saved-recipes .recipe-meta .servings:hover {
+  background-color: #8e24aa;
+  color: white;
+  box-shadow: 0 2px 8px rgba(142, 36, 170, 0.3);
+}
+
 /* Responsive adjustments for saved recipes */
 @media (max-width: 768px) {
   .saved-recipes-container {
