@@ -1,7 +1,6 @@
 import { StrictMode, useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import './styles/base.css'
 import { AuthProvider } from './context/AuthContext'
 import PrivateRoute from './components/Auth/PrivateRoute'
 import Login from './components/Auth/Login'
@@ -15,7 +14,8 @@ import { getCollection } from './services/firebase/firestore'
 import { useAuth } from './context/AuthContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import History from './components/History.jsx'
-
+import './styles/base.css'      // Global utilities and base styles
+import './index.css'           // Tailwind and minimal overrides
 
 function MainApp() {
   const { currentUser, isAuthenticated } = useAuth()

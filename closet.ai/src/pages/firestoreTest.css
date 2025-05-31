@@ -68,7 +68,6 @@
   margin-top: 2px;
 }
 
-/* Alternative: More compact horizontal list layout */
 .ingredients-list-compact {
   display: flex;
   flex-wrap: wrap;
