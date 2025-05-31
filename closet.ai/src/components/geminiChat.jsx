@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { geminiService } from '../services/gemini/gemini';
 import { saveRecipe, validateRecipeIngredients, subtractRecipeIngredients, addHistoryEntry } from '../services/firebase/firestore';
+import './geminiChat.css';
+
 const STEPS = {
   SELECT_MEAL_TYPE: 0,
   RECIPE_SUGGESTIONS: 1,

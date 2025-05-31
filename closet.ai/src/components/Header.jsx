@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { logoutUser } from '../services/firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import '../styles/global.css';
+import '../styles/Header.css';
 
 const Header = () => {
   const { currentUser } = useAuth();

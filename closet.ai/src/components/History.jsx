@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getHistory, getHistoryByType, getHistoryByDateRange } from '../services/firebase/firestore';
 import { useAuth } from '../context/AuthContext';
+import './History.css';
 
 function History() {
   const [history, setHistory] = useState([]);

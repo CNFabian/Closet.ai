@@ -1,0 +1,150 @@
+/* Saved Recipes Styles */
+.saved-recipes-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.saved-recipes {
+  width: 100%;
+}
+
+.saved-recipes h2 {
+  margin-bottom: 20px;
+  color: #2c3e50;
+  text-align: center;
+}
+
+/* Recipe grid for saved recipes */
+.saved-recipes .recipe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.saved-recipes .recipe-card {
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid #e0e0e0;
+  height: auto;
+  min-height: 200px;
+}
+
+.saved-recipes .recipe-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.saved-recipes .recipe-card h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #2c3e50;
+  font-size: 1.2rem;
+  line-height: 1.3;
+}
+
+.saved-recipes .recipe-description {
+  color: #666;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin-bottom: 15px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.saved-recipes .recipe-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 15px;
+  font-size: 0.85rem;
+}
+
+.saved-recipes .recipe-meta span {
+  background-color: #f8f9fa;
+  padding: 4px 8px;
+  border-radius: 12px;
+  border: 1px solid #dee2e6;
+  color: #495057;
+}
+
+.saved-recipes .recipe-meta .difficulty {
+  background-color: orange;
+  color: white;
+  border-color: orange;
+}
+
+.saved-recipes .recipe-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.saved-recipes .recipe-tags .tag {
+  background-color: #e9ecef;
+  color: #495057;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+}
+
+.saved-recipes .recipe-tags .tag.more {
+  background-color: #6c757d;
+  color: white;
+}
+
+.saved-recipes .saved-date {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-top: auto;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 10px;
+}
+
+.no-saved-recipes {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-style: italic;
+}
+
+.no-saved-recipes h2 {
+  color: #2c3e50;
+  margin-bottom: 15px;
+}
+
+/* Responsive adjustments for saved recipes */
+@media (max-width: 768px) {
+  .saved-recipes-container {
+    padding: 15px;
+  }
+  
+  .saved-recipes .recipe-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+  }
+  
+  .saved-recipes .recipe-card {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .saved-recipes .recipe-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .saved-recipes .recipe-meta {
+    flex-direction: column;
+    gap: 5px;
+  }
+}

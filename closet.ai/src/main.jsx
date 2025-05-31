@@ -1,7 +1,7 @@
 import { StrictMode, useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import './index.css'
+import './styles/base.css'
 import { AuthProvider } from './context/AuthContext'
 import PrivateRoute from './components/Auth/PrivateRoute'
 import Login from './components/Auth/Login'
@@ -128,7 +128,7 @@ function MainApp() {
           onIngredientsUpdated={updateIngredients}
         />
       )}
-      
+
       {activeView === 'history' && (
         <History />
       )}

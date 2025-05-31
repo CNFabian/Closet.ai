@@ -1,0 +1,252 @@
+/* History Component Styles */
+.history-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  color: #2c3e50;
+}
+
+.history-container h2 {
+  margin-bottom: 30px;
+  color: #2c3e50;
+  text-align: center;
+}
+
+.history-filters {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.filter-group label {
+  font-weight: bold;
+  color: #555;
+  font-size: 14px;
+}
+
+.filter-group select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  max-width: 200px;
+}
+
+.date-range {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.date-range input[type="date"] {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.date-range button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.date-range button:first-of-type {
+  background-color: orange;
+  color: white;
+}
+
+.date-range button:first-of-type:hover:not(:disabled) {
+  background-color: #e55a00;
+}
+
+.date-range button:first-of-type:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.date-range .clear-button {
+  background-color: #6c757d;
+  color: white;
+}
+
+.date-range .clear-button:hover {
+  background-color: #5a6268;
+}
+
+.history-list {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.history-item {
+  display: flex;
+  padding: 20px;
+  border-bottom: 1px solid #e9ecef;
+  transition: background-color 0.2s ease;
+}
+
+.history-item:last-child {
+  border-bottom: none;
+}
+
+.history-item:hover {
+  background-color: #f8f9fa;
+}
+
+.history-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  margin-right: 15px;
+  flex-shrink: 0;
+}
+
+.history-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-main h4 {
+  margin: 0 0 5px 0;
+  color: #2c3e50;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.history-description {
+  margin: 0 0 10px 0;
+  color: #495057;
+  line-height: 1.4;
+}
+
+.history-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.history-date {
+  font-weight: 500;
+}
+
+.history-type {
+  background-color: #f8f9fa;
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid #dee2e6;
+}
+
+.history-details {
+  background-color: #f8f9fa;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+  font-size: 13px;
+  color: #495057;
+}
+
+.recipe-details {
+  display: flex;
+  gap: 15px;
+}
+
+.recipe-details span {
+  background-color: white;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+}
+
+.change-details {
+  line-height: 1.4;
+}
+
+.ingredients-used {
+  line-height: 1.4;
+}
+
+.no-history {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6c757d;
+  font-style: italic;
+}
+
+/* Responsive design for history */
+@media (max-width: 768px) {
+  .history-filters {
+    padding: 15px;
+  }
+  
+  .date-range {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .date-range input[type="date"],
+  .date-range button {
+    width: 100%;
+    max-width: none;
+  }
+  
+  .history-item {
+    padding: 15px;
+  }
+  
+  .history-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  
+  .recipe-details {
+    flex-direction: column;
+    gap: 5px;
+  }
+}
+
+@media (max-width: 480px) {
+  .history-container {
+    padding: 10px;
+  }
+  
+  .history-icon {
+    width: 35px;
+    height: 35px;
+    font-size: 16px;
+    margin-right: 10px;
+  }
+  
+  .history-main h4 {
+    font-size: 15px;
+  }
+  
+  .history-description {
+    font-size: 14px;
+  }
+}

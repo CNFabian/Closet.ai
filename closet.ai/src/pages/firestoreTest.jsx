@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import '../styles/test.css'
+import './firestoreTest.css';
 import { addIngredient, updateIngredient } from '../services/firebase/firestore'
 
 const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
