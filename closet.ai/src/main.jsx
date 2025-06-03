@@ -114,11 +114,16 @@ function MainApp() {
       )}
       
       {activeView === 'recipes' && (
-        <GeminiChat ingredients={ingredients} />
+        <GeminiChat 
+          ingredients={ingredients} 
+          onIngredientsUpdated={updateIngredients}
+        />
       )}
       
       {activeView === 'savedRecipes' && (
-        <SavedRecipes onSelectRecipe={handleSelectSavedRecipe} />
+        <SavedRecipes 
+          onSelectRecipe={handleSelectSavedRecipe} 
+        />
       )}
       
       {activeView === 'viewRecipe' && selectedSavedRecipe && (

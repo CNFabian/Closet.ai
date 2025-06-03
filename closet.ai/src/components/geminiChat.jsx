@@ -12,7 +12,7 @@ const STEPS = {
   RECIPE_COMPLETION: 5
 };
 
-function GeminiChat({ ingredients = [] }) {
+function GeminiChat({ ingredients = [], onIngredientsUpdated }) {
   // State for the multi-step process
   const [currentStep, setCurrentStep] = useState(STEPS.SELECT_MEAL_TYPE);
   const [mealType, setMealType] = useState('');
@@ -210,8 +210,10 @@ const handleRecipeSelect = async (recipe) => {
       setCurrentStep(STEPS.RECIPE_COMPLETION);
       setShowCompletionConfirm(false);
       
-      // You might want to refresh ingredients in parent component
-      // if (onIngredientsUpdated) onIngredientsUpdated();
+      // Refresh ingredients in parent component
+      if (onIngredientsUpdated) {
+        await onIngredientsUpdated();
+      }
       
     } catch (error) {
       console.error('Error updating inventory:', error);
