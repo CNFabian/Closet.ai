@@ -3,7 +3,6 @@ import './firestoreTest.css';
 import { addIngredient, updateIngredient } from '../services/firebase/firestore'
 
 const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
-
   const categories = [
     'Vegetables', 'Fruits', 'Meat', 'Dairy', 'Grains', 'Spices', 'Condiments', 
     'Canned Goods', 'Frozen', 'Beverages', 'Other'
@@ -25,24 +24,24 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
   
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [displayMode, setDisplayMode] = useState('grid'); // 'grid', 'chips', 'category'
-  
-  // Edit mode states
+  const [displayMode, setDisplayMode] = useState('grid');
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
   const [originalEditData, setOriginalEditData] = useState({});
   const [showSavePrompt, setShowSavePrompt] = useState(false);
+  
+  // Keep track of current category separately
+  const [currentCategory, setCurrentCategory] = useState('Vegetables');
+  
+  const [formData, setFormData] = useState({
+    name: '',
+    quantity: '',
+    unit: unitsByCategory['Vegetables'][0],
+    category: 'Vegetables',
+    hasExpirationDate: false,
+    expirationDate: ''
+  });
 
-const [formData, setFormData] = useState({
-  name: '',
-  quantity: '',
-  unit: unitsByCategory['Vegetables'][0], // Start with first unit from Vegetables
-  category: 'Vegetables', // Changed default to Vegetables
-  hasExpirationDate: false,
-  expirationDate: ''
-});
-
-  // Add this helper function to get available units
   const getAvailableUnits = (category) => {
     return unitsByCategory[category] || unitsByCategory['Other'];
   };
@@ -56,17 +55,76 @@ const [formData, setFormData] = useState({
   };
 
   const handleCategoryChange = (e) => {
-  const newCategory = e.target.value;
-  const availableUnits = getAvailableUnits(newCategory);
-  
-  setFormData(prev => ({
-    ...prev,
-    category: newCategory,
-    unit: availableUnits[0] // Set to first unit of the new category
-  }));
-};
+    const newCategory = e.target.value;
+    const availableUnits = getAvailableUnits(newCategory);
+    
+    setCurrentCategory(newCategory);
+    setFormData(prev => ({
+      ...prev,
+      category: newCategory,
+      unit: availableUnits[0]
+    }));
+  };
 
-  // Edit mode functions
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!formData.name.trim()) {
+      setMessage('Please enter an ingredient name');
+      return;
+    }
+
+    if (!formData.quantity || parseFloat(formData.quantity) <= 0) {
+      setMessage('Please enter a valid quantity');
+      return;
+    }
+
+    if (formData.hasExpirationDate && !formData.expirationDate) {
+      setMessage('Please enter an expiration date or disable the expiration date option');
+      return;
+    }
+
+    setLoading(true);
+    setMessage('');
+   
+    try {
+      const ingredientData = {
+        name: formData.name.trim(),
+        quantity: parseFloat(formData.quantity),
+        unit: formData.unit,
+        category: formData.category
+      };
+
+      if (formData.hasExpirationDate && formData.expirationDate) {
+        ingredientData.expirationDate = new Date(formData.expirationDate);
+      }
+
+      await addIngredient(ingredientData);
+
+      if (updateIngredients) {
+        await updateIngredients();
+      }
+
+      setMessage('Ingredient added successfully!');
+      
+      // Reset form but keep the current category
+      setFormData({
+        name: '',
+        quantity: '',
+        unit: getAvailableUnits(currentCategory)[0],
+        category: currentCategory,
+        hasExpirationDate: false,
+        expirationDate: ''
+      });
+    } catch (error) {
+      console.error("Error adding ingredient: ", error);
+      setMessage('Error adding ingredient. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Edit functionality
   const startEditing = (ingredient) => {
     const expirationDate = ingredient.expirationDate ? 
       (ingredient.expirationDate.toDate ? ingredient.expirationDate.toDate() : new Date(ingredient.expirationDate)) 
@@ -82,7 +140,7 @@ const [formData, setFormData] = useState({
     };
 
     setEditData(editFormData);
-    setOriginalEditData(JSON.parse(JSON.stringify(editFormData))); // Deep copy for comparison
+    setOriginalEditData(JSON.parse(JSON.stringify(editFormData)));
     setEditingId(ingredient.id);
   };
 
@@ -95,15 +153,15 @@ const [formData, setFormData] = useState({
   };
 
   const handleEditCategoryChange = (e) => {
-  const newCategory = e.target.value;
-  const availableUnits = getAvailableUnits(newCategory);
-  
-  setEditData(prev => ({
-    ...prev,
-    category: newCategory,
-    unit: availableUnits[0] // Set to first unit of the new category
-  }));
-};
+    const newCategory = e.target.value;
+    const availableUnits = getAvailableUnits(newCategory);
+    
+    setEditData(prev => ({
+      ...prev,
+      category: newCategory,
+      unit: availableUnits[0]
+    }));
+  };
 
   const hasChanges = () => {
     return JSON.stringify(editData) !== JSON.stringify(originalEditData);
@@ -178,6 +236,7 @@ const [formData, setFormData] = useState({
     }
   };
 
+  // Helper functions
   const getTodayDate = () => {
     const today = new Date();
     return today.toISOString().split('T')[0];
@@ -199,64 +258,6 @@ const [formData, setFormData] = useState({
     return expDate < today;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!formData.name.trim()) {
-      setMessage('Please enter an ingredient name');
-      return;
-    }
-
-    if (!formData.quantity || parseFloat(formData.quantity) <= 0) {
-      setMessage('Please enter a valid quantity');
-      return;
-    }
-
-    if (formData.hasExpirationDate && !formData.expirationDate) {
-      setMessage('Please enter an expiration date or disable the expiration date option');
-      return;
-    }
-
-    setLoading(true);
-    setMessage('');
-   
-    try {
-      const ingredientData = {
-        name: formData.name.trim(),
-        quantity: parseFloat(formData.quantity),
-        unit: formData.unit,
-        category: formData.category
-      };
-
-      if (formData.hasExpirationDate && formData.expirationDate) {
-        ingredientData.expirationDate = new Date(formData.expirationDate);
-      }
-
-      await addIngredient(ingredientData);
-
-      if (updateIngredients) {
-        await updateIngredients();
-      }
-
-      setMessage('Ingredient added successfully!');
-      
-      setFormData({
-        name: '',
-        quantity: '',
-        unit: getAvailableUnits(formData.category)[0], // Keep category-appropriate unit
-        category: formData.category, // Keep the same category
-        hasExpirationDate: false,
-        expirationDate: ''
-      });
-    } catch (error) {
-      console.error("Error adding ingredient: ", error);
-      setMessage('Error adding ingredient. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Group ingredients by category
   const groupedIngredients = cachedIngredients.reduce((groups, ingredient) => {
     const category = ingredient.category || 'Other';
     if (!groups[category]) {
@@ -266,12 +267,12 @@ const [formData, setFormData] = useState({
     return groups;
   }, {});
 
+  // Render methods
   const renderEditForm = (ingredient) => (
     <div className="edit-form-overlay">
       <div className="edit-form">
         <h3>Edit {ingredient.name}</h3>
         
-        {/* Category first - moved to top */}
         <div className="form-group">
           <label htmlFor="edit-category">Category:</label>
           <select 
@@ -387,7 +388,6 @@ const [formData, setFormData] = useState({
     </div>
   );
 
-  // Render ingredients in grid format
   const renderGridView = () => (
     <div className="ingredients-grid">
       {cachedIngredients.map((ingredient) => {
@@ -428,7 +428,6 @@ const [formData, setFormData] = useState({
     </div>
   );
 
-  // Render ingredients as chips
   const renderChipsView = () => (
     <div className="ingredients-list-compact">
       {cachedIngredients.map((ingredient) => {
@@ -464,7 +463,6 @@ const [formData, setFormData] = useState({
     </div>
   );
 
-  // Render ingredients grouped by category
   const renderCategoryView = () => (
     <div className="ingredients-by-category">
       {Object.entries(groupedIngredients).map(([category, ingredients]) => (
@@ -506,12 +504,9 @@ const [formData, setFormData] = useState({
   
   return (
     <div className="box">
-      <h1 className="title">
-        Add Ingredients to Your Pantry
-      </h1>
+      <h1 className="title">Add Ingredients to Your Pantry</h1>
       
       <form onSubmit={handleSubmit} className="ingredient-form">
-        {/* Category first - moved to top */}
         <div className="form-group">
           <label htmlFor="category">Category:</label>
           <select 
@@ -616,12 +611,10 @@ const [formData, setFormData] = useState({
       
       {message && <p className="message">{message}</p>}
       
-      {/* Display cached ingredients with view options */}
       <div className="cached-ingredients">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h2>Your Pantry Inventory ({cachedIngredients.length} items):</h2>
           
-          {/* Display mode selector */}
           <div className="display-mode-selector">
             <label style={{ marginRight: '10px', fontSize: '14px', color: '#666' }}>View:</label>
             <select 
@@ -653,12 +646,8 @@ const [formData, setFormData] = useState({
         )}
       </div>
 
-      {/* Edit form overlay */}
-      {editingId && (
-        renderEditForm(cachedIngredients.find(ing => ing.id === editingId))
-      )}
+      {editingId && renderEditForm(cachedIngredients.find(ing => ing.id === editingId))}
 
-      {/* Save confirmation prompt */}
       {showSavePrompt && (
         <div className="save-prompt-overlay">
           <div className="save-prompt">
