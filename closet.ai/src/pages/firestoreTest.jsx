@@ -3,6 +3,26 @@ import './firestoreTest.css';
 import { addIngredient, updateIngredient } from '../services/firebase/firestore'
 
 const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
+
+  const categories = [
+    'Vegetables', 'Fruits', 'Meat', 'Dairy', 'Grains', 'Spices', 'Condiments', 
+    'Canned Goods', 'Frozen', 'Beverages', 'Other'
+  ];
+
+  const unitsByCategory = {
+    'Vegetables': ['lb', 'lbs', 'piece', 'pieces', 'bag', 'bunch', 'head', 'oz', 'container'],
+    'Fruits': ['lb', 'lbs', 'piece', 'pieces', 'bag', 'container', 'pint', 'quart', 'oz'],
+    'Meat': ['lb', 'lbs', 'oz', 'package', 'piece', 'pieces'],
+    'Dairy': ['gallon', 'half gallon', 'quart', 'pint', 'cup', 'oz', 'lb', 'lbs', 'container', 'stick', 'sticks', 'dozen'],
+    'Grains': ['lb', 'lbs', 'oz', 'bag', 'box', 'container'],
+    'Spices': ['oz', 'container', 'jar', 'bottle', 'package'],
+    'Condiments': ['bottle', 'jar', 'container', 'oz', 'packet', 'tube'],
+    'Canned Goods': ['can', 'cans', 'jar', 'bottle', 'oz', 'lb', 'lbs'],
+    'Frozen': ['bag', 'box', 'container', 'lb', 'lbs', 'oz', 'piece', 'pieces'],
+    'Beverages': ['bottle', 'can', 'cans', 'case', 'gallon', 'half gallon', 'quart', 'pint', 'liter', '2 liter', 'oz', 'pack'],
+    'Other': ['piece', 'pieces', 'package', 'box', 'bag', 'container', 'bottle', 'jar', 'lb', 'lbs', 'oz']
+  };
+  
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [displayMode, setDisplayMode] = useState('grid'); // 'grid', 'chips', 'category'
@@ -13,24 +33,19 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
   const [originalEditData, setOriginalEditData] = useState({});
   const [showSavePrompt, setShowSavePrompt] = useState(false);
 
-  const [formData, setFormData] = useState({
-    name: '',
-    quantity: '',
-    unit: 'piece',
-    category: 'Other',
-    hasExpirationDate: false,
-    expirationDate: ''
-  });
+const [formData, setFormData] = useState({
+  name: '',
+  quantity: '',
+  unit: unitsByCategory['Vegetables'][0], // Start with first unit from Vegetables
+  category: 'Vegetables', // Changed default to Vegetables
+  hasExpirationDate: false,
+  expirationDate: ''
+});
 
-  const units = [
-    'piece', 'pieces', 'cup', 'cups', 'tablespoon', 'tbsp', 'teaspoon', 'tsp',
-    'gram', 'g', 'kg', 'oz', 'lb', 'liter', 'ml', 'pint', 'quart'
-  ];
-
-  const categories = [
-    'Vegetables', 'Fruits', 'Meat', 'Dairy', 'Grains', 'Spices', 'Condiments', 
-    'Canned Goods', 'Frozen', 'Beverages', 'Other'
-  ];
+  // Add this helper function to get available units
+  const getAvailableUnits = (category) => {
+    return unitsByCategory[category] || unitsByCategory['Other'];
+  };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -39,6 +54,17 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
       [name]: type === 'checkbox' ? checked : value
     }));
   };
+
+  const handleCategoryChange = (e) => {
+  const newCategory = e.target.value;
+  const availableUnits = getAvailableUnits(newCategory);
+  
+  setFormData(prev => ({
+    ...prev,
+    category: newCategory,
+    unit: availableUnits[0] // Set to first unit of the new category
+  }));
+};
 
   // Edit mode functions
   const startEditing = (ingredient) => {
@@ -67,6 +93,17 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
       [name]: type === 'checkbox' ? checked : value
     }));
   };
+
+  const handleEditCategoryChange = (e) => {
+  const newCategory = e.target.value;
+  const availableUnits = getAvailableUnits(newCategory);
+  
+  setEditData(prev => ({
+    ...prev,
+    category: newCategory,
+    unit: availableUnits[0] // Set to first unit of the new category
+  }));
+};
 
   const hasChanges = () => {
     return JSON.stringify(editData) !== JSON.stringify(originalEditData);
@@ -206,8 +243,8 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
       setFormData({
         name: '',
         quantity: '',
-        unit: 'piece',
-        category: 'Other',
+        unit: getAvailableUnits(formData.category)[0], // Keep category-appropriate unit
+        category: formData.category, // Keep the same category
         hasExpirationDate: false,
         expirationDate: ''
       });
@@ -229,12 +266,26 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
     return groups;
   }, {});
 
-  // Render edit form for an ingredient
   const renderEditForm = (ingredient) => (
     <div className="edit-form-overlay">
       <div className="edit-form">
         <h3>Edit {ingredient.name}</h3>
         
+        {/* Category first - moved to top */}
+        <div className="form-group">
+          <label htmlFor="edit-category">Category:</label>
+          <select 
+            id="edit-category"
+            name="category"
+            value={editData.category}
+            onChange={handleEditCategoryChange}
+          >
+            {categories.map(category => (
+              <option key={category} value={category}>{category}</option>
+            ))}
+          </select>
+        </div>
+
         <div className="form-group">
           <label htmlFor="edit-name">Ingredient Name:</label>
           <input 
@@ -272,25 +323,11 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
               value={editData.unit}
               onChange={handleEditInputChange}
             >
-              {units.map(unit => (
+              {getAvailableUnits(editData.category).map(unit => (
                 <option key={unit} value={unit}>{unit}</option>
               ))}
             </select>
           </div>
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="edit-category">Category:</label>
-          <select 
-            id="edit-category"
-            name="category"
-            value={editData.category}
-            onChange={handleEditInputChange}
-          >
-            {categories.map(category => (
-              <option key={category} value={category}>{category}</option>
-            ))}
-          </select>
         </div>
 
         <div className="form-group">
@@ -474,6 +511,21 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
       </h1>
       
       <form onSubmit={handleSubmit} className="ingredient-form">
+        {/* Category first - moved to top */}
+        <div className="form-group">
+          <label htmlFor="category">Category:</label>
+          <select 
+            id="category"
+            name="category"
+            value={formData.category}
+            onChange={handleCategoryChange}
+          >
+            {categories.map(category => (
+              <option key={category} value={category}>{category}</option>
+            ))}
+          </select>
+        </div>
+
         <div className="form-group">
           <label htmlFor="name">Ingredient Name:</label>
           <input 
@@ -511,25 +563,11 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
               value={formData.unit}
               onChange={handleInputChange}
             >
-              {units.map(unit => (
+              {getAvailableUnits(formData.category).map(unit => (
                 <option key={unit} value={unit}>{unit}</option>
               ))}
             </select>
           </div>
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="category">Category:</label>
-          <select 
-            id="category"
-            name="category"
-            value={formData.category}
-            onChange={handleInputChange}
-          >
-            {categories.map(category => (
-              <option key={category} value={category}>{category}</option>
-            ))}
-          </select>
         </div>
 
         <div className="form-group">
