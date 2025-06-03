@@ -375,124 +375,128 @@ const handleRecipeSelect = async (recipe) => {
         </div>
       )}
       
-      {/* Step 4: Recipe Details and Instructions */}
-      {currentStep === STEPS.RECIPE_DETAILS && recipeData && (
-        <div className="step recipe-details">
-          <h2>{recipeData.name}</h2>
-          
-          {recipeData.adjustedFor && (
-            <div className="adjustment-notice">
-              <p><strong>Note:</strong> {recipeData.adjustedFor}</p>
-            </div>
-          )}
-          
-          <div className="recipe-overview">
-            <p className="recipe-description">{recipeData.description}</p>
-            
-            <div className="recipe-meta">
-              <div className="meta-item">
-                <span className="meta-label">Prep Time:</span> {recipeData.prepTime}
-              </div>
-              <div className="meta-item">
-                <span className="meta-label">Cook Time:</span> {recipeData.cookTime}
-              </div>
-              <div className="meta-item">
-                <span className="meta-label">Total Time:</span> {recipeData.totalTime}
-              </div>
-              <div className="meta-item">
-                <span className="meta-label">Servings:</span> {recipeData.servings}
-              </div>
-              <div className="meta-item">
-                <span className="meta-label">Difficulty:</span> {recipeData.difficulty}
-              </div>
-            </div>
-            
-            <h3>Ingredients</h3>
-            <ul className="ingredients-list detailed">
-              {recipeData.ingredients.map((ingredient, index) => (
-                <li key={index} className="ingredient-item">
-                  <span className="ingredient-quantity">
-                    {ingredient.quantity} {ingredient.unit}
-                  </span>
-                  {' '}
-                  <span className="ingredient-name">{ingredient.name}</span>
-                  {ingredient.preparation && (
-                    <span className="ingredient-prep">, {ingredient.preparation}</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-            
-            <h3>Instructions</h3>
-            <div className="step-by-step-container">
-              <div className="instruction-card">
-                <div className="instruction-header">
-                  <span className="step-number">
-                    Step {recipeData.instructions[currentInstructionIndex].stepNumber}
-                  </span>
-                  <span className="step-duration">
-                    {recipeData.instructions[currentInstructionIndex].duration} min
-                  </span>
-                </div>
-                
-                <p className="instruction-text">
-                  {recipeData.instructions[currentInstructionIndex].instruction}
-                </p>
-                
-                {recipeData.instructions[currentInstructionIndex].tip && (
-                  <div className="instruction-tip">
-                    <span className="tip-label">Tip:</span> {recipeData.instructions[currentInstructionIndex].tip}
-                  </div>
-                )}
-                
-                <div className="step-navigation">
-                  <button 
-                    onClick={goToPreviousInstruction} 
-                    disabled={currentInstructionIndex === 0}
-                    className="nav-button prev"
-                  >
-                    Previous
-                  </button>
-                  
-                  <span className="step-indicator">
-                    {currentInstructionIndex + 1} of {recipeData.instructions.length}
-                  </span>
-                  
-                  <button 
-                    onClick={goToNextInstruction} 
-                    disabled={false}
-                    className="nav-button next"
-                  >
-                    {currentInstructionIndex === recipeData.instructions.length - 1 ? 'Complete Recipe' : 'Next'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="navigation-buttons">
-            <button className="back-button" onClick={handleBack} disabled={loading}>
-              Back to Recipes
-            </button>
-            <button 
-              className="save-button" 
-              onClick={handleSaveRecipe} 
-              disabled={isSaving || loading}
-            >
-              {isSaving ? 'Saving...' : 'Save Recipe'}
-            </button>
-            <button className="restart-button" onClick={handleRestart} disabled={loading}>
-              Start Over
-            </button>
-          </div>
-
-          {saveMessage && (
-            <div className={`save-message ${saveMessage.includes('Failed') ? 'error' : 'success'}`}>
-              {saveMessage}
-            </div>
-          )}
+{/* Step 4: Recipe Details and Instructions */}
+{currentStep === STEPS.RECIPE_DETAILS && recipeData && (
+  <div className="step recipe-details">
+    <h2>Generated Recipe</h2>
+    
+    {/* Recipe displayed in same format as saved recipes */}
+    <div className="recipe-grid">
+      <div className="recipe-card">
+        <h3>{recipeData.name}</h3>
+        <p className="recipe-description">{recipeData.description}</p>
+        <div className="recipe-meta">
+          <span className="difficulty">{recipeData.difficulty}</span>
+          <span className="time">{recipeData.totalTime}</span>
+          <span className="servings">{recipeData.servings} servings</span>
         </div>
-      )}
+        {recipeData.tags && recipeData.tags.length > 0 && (
+          <div className="recipe-tags">
+            {recipeData.tags.slice(0, 3).map((tag, index) => (
+              <span key={index} className="tag">{tag}</span>
+            ))}
+            {recipeData.tags.length > 3 && (
+              <span className="tag more">+{recipeData.tags.length - 3} more</span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+
+    {recipeData.adjustedFor && (
+      <div className="adjustment-notice">
+        <p><strong>Note:</strong> {recipeData.adjustedFor}</p>
+      </div>
+    )}
+    
+    {/* Detailed cooking instructions */}
+    <div className="recipe-cooking-details">
+      <h3>Ingredients</h3>
+      <ul className="ingredients-list detailed">
+        {recipeData.ingredients.map((ingredient, index) => (
+          <li key={index} className="ingredient-item">
+            <span className="ingredient-quantity">
+              {ingredient.quantity} {ingredient.unit}
+            </span>
+            {' '}
+            <span className="ingredient-name">{ingredient.name}</span>
+            {ingredient.preparation && (
+              <span className="ingredient-prep">, {ingredient.preparation}</span>
+            )}
+          </li>
+        ))}
+      </ul>
+      
+      <h3>Instructions</h3>
+      <div className="step-by-step-container">
+        <div className="instruction-card">
+          <div className="instruction-header">
+            <span className="step-number">
+              Step {recipeData.instructions[currentInstructionIndex].stepNumber}
+            </span>
+            <span className="step-duration">
+              {recipeData.instructions[currentInstructionIndex].duration} min
+            </span>
+          </div>
+          
+          <p className="instruction-text">
+            {recipeData.instructions[currentInstructionIndex].instruction}
+          </p>
+          
+          {recipeData.instructions[currentInstructionIndex].tip && (
+            <div className="instruction-tip">
+              <span className="tip-label">Tip:</span> {recipeData.instructions[currentInstructionIndex].tip}
+            </div>
+          )}
+          
+          <div className="step-navigation">
+            <button 
+              onClick={goToPreviousInstruction} 
+              disabled={currentInstructionIndex === 0}
+              className="nav-button prev"
+            >
+              Previous
+            </button>
+            
+            <span className="step-indicator">
+              {currentInstructionIndex + 1} of {recipeData.instructions.length}
+            </span>
+            
+            <button 
+              onClick={goToNextInstruction} 
+              disabled={false}
+              className="nav-button next"
+            >
+              {currentInstructionIndex === recipeData.instructions.length - 1 ? 'Complete Recipe' : 'Next'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div className="navigation-buttons">
+      <button className="back-button" onClick={handleBack} disabled={loading}>
+        Back to Recipes
+      </button>
+      <button 
+        className="save-button" 
+        onClick={handleSaveRecipe} 
+        disabled={isSaving || loading}
+      >
+        {isSaving ? 'Saving...' : 'Save Recipe'}
+      </button>
+      <button className="restart-button" onClick={handleRestart} disabled={loading}>
+        Start Over
+      </button>
+    </div>
+
+    {saveMessage && (
+      <div className={`save-message ${saveMessage.includes('Failed') ? 'error' : 'success'}`}>
+        {saveMessage}
+      </div>
+    )}
+  </div>
+)}
       
       {/* Recipe Completion Confirmation */}
       {showCompletionConfirm && (
