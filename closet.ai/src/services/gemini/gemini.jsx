@@ -218,29 +218,49 @@ export const geminiService = {
   },
   
   // Validate that recipe doesn't exceed available quantities
-  validateRecipeQuantities(recipeIngredients, availableIngredients) {
-    const warnings = [];
-    let isValid = true;
+validateRecipeQuantities(recipeIngredients, availableIngredients) {
+  const warnings = [];
+  let isValid = true;
+  
+  for (const recipeIng of recipeIngredients) {
+    const available = availableIngredients.find(ing => 
+      ing.name.toLowerCase() === recipeIng.name.toLowerCase()
+    );
     
-    for (const recipeIng of recipeIngredients) {
-      const available = availableIngredients.find(ing => 
-        ing.name.toLowerCase() === recipeIng.name.toLowerCase()
-      );
+    if (!available) {
+      warnings.push(`${recipeIng.name} is not available in pantry`);
+      isValid = false;
+    } else {
+      let requiredQuantity = parseFloat(recipeIng.quantity);
+      let availableQuantity = parseFloat(available.quantity);
+      let comparisonUnit = available.unit;
       
-      if (!available) {
-        warnings.push(`${recipeIng.name} is not available in pantry`);
-        isValid = false;
-      } else {
-        // Simple quantity check (you could enhance this with unit conversion)
-        if (parseFloat(recipeIng.quantity) > parseFloat(available.quantity)) {
-          warnings.push(`Recipe calls for ${recipeIng.quantity} ${recipeIng.unit} of ${recipeIng.name}, but only ${available.quantity} ${available.unit} available`);
-          isValid = false;
+      // Try to convert recipe requirement to available unit
+      if (available.unit !== recipeIng.unit) {
+        const convertedQuantity = convertUnits(
+          requiredQuantity,
+          recipeIng.unit,
+          available.unit,
+          recipeIng.name
+        );
+        
+        if (convertedQuantity !== null) {
+          requiredQuantity = convertedQuantity;
+          warnings.push(`Converted ${recipeIng.quantity} ${recipeIng.unit} to ${requiredQuantity.toFixed(2)} ${available.unit} for ${recipeIng.name}`);
+        } else {
+          warnings.push(`Cannot convert ${recipeIng.unit} to ${available.unit} for ${recipeIng.name}. Comparison may be inaccurate.`);
         }
       }
+      
+      if (requiredQuantity > availableQuantity) {
+        warnings.push(`Recipe calls for ${recipeIng.quantity} ${recipeIng.unit} of ${recipeIng.name}, but only ${available.quantity} ${available.unit} available`);
+        isValid = false;
+      }
     }
-    
-    return { isValid, warnings };
-  },
+  }
+  
+  return { isValid, warnings };
+},
   
   // Generate content directly using the Gemini API
   async generateContent(prompt, temperature = 0.7) {

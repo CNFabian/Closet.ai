@@ -559,3 +559,14 @@
   box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
   background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
 }
+
+.conversion-indicator {
+  color: #28a745;
+  font-size: 12px;
+  margin-left: 4px;
+  font-weight: normal;
+}
+
+.ingredient-quantity {
+  position: relative;
+}

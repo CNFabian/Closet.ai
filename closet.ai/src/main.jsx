@@ -120,19 +120,21 @@ function MainApp() {
         />
       )}
       
-      {activeView === 'savedRecipes' && (
-        <SavedRecipes 
-          onSelectRecipe={handleSelectSavedRecipe} 
-        />
-      )}
-      
-      {activeView === 'viewRecipe' && selectedSavedRecipe && (
-        <RecipeViewer 
-          recipe={selectedSavedRecipe} 
-          onBack={() => setActiveView('savedRecipes')} 
-          onIngredientsUpdated={updateIngredients}
-        />
-      )}
+    {activeView === 'savedRecipes' && (
+      <SavedRecipes 
+        onSelectRecipe={handleSelectSavedRecipe}
+        ingredients={ingredients}
+      />
+    )}
+
+    {activeView === 'viewRecipe' && selectedSavedRecipe && (
+      <RecipeViewer 
+        recipe={selectedSavedRecipe} 
+        onBack={() => setActiveView('savedRecipes')} 
+        onIngredientsUpdated={updateIngredients}
+        ingredients={ingredients}
+      />
+    )}
 
       {activeView === 'history' && (
         <History />

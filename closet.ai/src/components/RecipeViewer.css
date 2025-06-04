@@ -545,6 +545,17 @@
   box-shadow: none;
 }
 
+.conversion-indicator {
+  color: #28a745;
+  font-size: 12px;
+  margin-left: 4px;
+  font-weight: normal;
+}
+
+.ingredient-quantity {
+  position: relative;
+}
+
 /* Animations */
 @keyframes fadeIn {
   from { opacity: 0; }

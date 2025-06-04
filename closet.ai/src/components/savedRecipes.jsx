@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { getSavedRecipes } from '../services/firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import './savedRecipes.css';
+import { convertRecipeToUserUnits } from '../utils/unitConversions';
+import ConversionIcon from './ConversionIcon';
 
-function SavedRecipes({ onSelectRecipe }) {
+function SavedRecipes({ onSelectRecipe, ingredients = [] }) {
   const [savedRecipes, setSavedRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

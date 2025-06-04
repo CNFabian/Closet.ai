@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './config';
 import { auth } from './config';
+import { convertUnits, formatConvertedQuantity } from '../../utils/unitConversions';
 
 // Helper function to get current user ID
 const getCurrentUserId = () => {
@@ -233,7 +234,6 @@ export const deleteIngredient = async (ingredientId) => {
   }
 };
 
-// Subtract ingredients used in recipe (batch operation for consistency) - user-specific
 export const subtractRecipeIngredients = async (usedIngredients) => {
   try {
     const userId = getCurrentUserId();
@@ -255,45 +255,69 @@ export const subtractRecipeIngredients = async (usedIngredients) => {
         id: doc.id,
         quantity: data.quantity,
         unit: data.unit,
+        name: data.name,
         ...data
       };
     });
     
-    // Process each used ingredient
+    const conversionResults = [];
+    
+    // Process each used ingredient with proper conversion
     for (const usedIngredient of usedIngredients) {
       const ingredientKey = usedIngredient.name.toLowerCase();
       const currentIngredient = currentIngredients[ingredientKey];
       
       if (currentIngredient) {
-        // Convert quantities to same unit if needed (simplified conversion)
         let quantityToSubtract = usedIngredient.quantity;
+        let conversionInfo = `${usedIngredient.quantity} ${usedIngredient.unit}`;
         
-        // Basic unit conversion (you may want to expand this)
+        // Try to convert units if they're different
         if (currentIngredient.unit !== usedIngredient.unit) {
-          quantityToSubtract = convertUnits(
-            usedIngredient.quantity, 
-            usedIngredient.unit, 
-            currentIngredient.unit
+          const convertedQuantity = convertUnits(
+            usedIngredient.quantity,
+            usedIngredient.unit,
+            currentIngredient.unit,
+            usedIngredient.name
           );
+          
+          if (convertedQuantity !== null) {
+            quantityToSubtract = formatConvertedQuantity(convertedQuantity);
+            conversionInfo = `${usedIngredient.quantity} ${usedIngredient.unit} → ${quantityToSubtract} ${currentIngredient.unit}`;
+          } else {
+            // Log conversion failure but continue with original quantity
+            console.warn(`Could not convert ${usedIngredient.quantity} ${usedIngredient.unit} to ${currentIngredient.unit} for ${usedIngredient.name}. Using original quantity.`);
+            conversionInfo = `${usedIngredient.quantity} ${usedIngredient.unit} (no conversion available)`;
+          }
         }
         
         const newQuantity = Math.max(0, currentIngredient.quantity - quantityToSubtract);
+        
+        conversionResults.push({
+          name: usedIngredient.name,
+          originalUsed: `${usedIngredient.quantity} ${usedIngredient.unit}`,
+          actualSubtracted: `${quantityToSubtract} ${currentIngredient.unit}`,
+          previousQuantity: currentIngredient.quantity,
+          newQuantity: newQuantity,
+          conversion: conversionInfo
+        });
         
         const docRef = doc(db, 'ingredients', currentIngredient.id);
         batch.update(docRef, {
           quantity: newQuantity,
           updatedAt: Timestamp.now()
         });
+      } else {
+        console.warn(`Ingredient "${usedIngredient.name}" not found in pantry`);
       }
     }
     
     // Commit the batch first
     await batch.commit();
     
-    // Then add history entry (after successful ingredient updates)
+    // Then add history entry with detailed conversion info
     try {
-      const usedIngredientsList = usedIngredients.map(ing => 
-        `${ing.quantity} ${ing.unit} ${ing.name}`
+      const usedIngredientsList = conversionResults.map(result => 
+        result.conversion
       ).join(', ');
 
       await addHistoryEntry({
@@ -301,46 +325,29 @@ export const subtractRecipeIngredients = async (usedIngredients) => {
         action: 'Cooked recipe',
         details: {
           ingredientsUsed: usedIngredients,
+          conversionResults: conversionResults,
           totalIngredients: usedIngredients.length
         },
         description: `Used ingredients for cooking: ${usedIngredientsList}`
       });
     } catch (historyError) {
-      // Log history error but don't fail the whole operation
       console.error('Error adding history entry:', historyError);
     }
     
-    return true;
+    // Log conversion results for debugging
+    console.log('Ingredient conversion results:', conversionResults);
+    
+    return {
+      success: true,
+      conversions: conversionResults
+    };
   } catch (error) {
     console.error('Error subtracting recipe ingredients:', error);
     throw error;
   }
 };
 
-// Basic unit conversion function (expand as needed)
-const convertUnits = (quantity, fromUnit, toUnit) => {
-  const conversions = {
-    // Volume conversions (simplified)
-    'cup_to_tablespoon': 16,
-    'tablespoon_to_teaspoon': 3,
-    'cup_to_teaspoon': 48,
-    // Add more conversions as needed
-  };
-  
-  const conversionKey = `${fromUnit}_to_${toUnit}`;
-  const reverseKey = `${toUnit}_to_${fromUnit}`;
-  
-  if (conversions[conversionKey]) {
-    return quantity * conversions[conversionKey];
-  } else if (conversions[reverseKey]) {
-    return quantity / conversions[reverseKey];
-  }
-  
-  // If no conversion available, return original quantity
-  return quantity;
-};
-
-// Check if recipe can be made with available ingredients (user-specific)
+// Update the validateRecipeIngredients function
 export const validateRecipeIngredients = async (recipeIngredients) => {
   try {
     const userId = getCurrentUserId();
@@ -359,6 +366,7 @@ export const validateRecipeIngredients = async (recipeIngredients) => {
       availableIngredients[data.name.toLowerCase()] = {
         quantity: data.quantity,
         unit: data.unit,
+        name: data.name,
         ...data
       };
     });
@@ -366,7 +374,8 @@ export const validateRecipeIngredients = async (recipeIngredients) => {
     const validation = {
       canMake: true,
       missingIngredients: [],
-      insufficientIngredients: []
+      insufficientIngredients: [],
+      conversionIssues: []
     };
     
     for (const ingredient of recipeIngredients) {
@@ -377,25 +386,39 @@ export const validateRecipeIngredients = async (recipeIngredients) => {
         validation.canMake = false;
         validation.missingIngredients.push(ingredient);
       } else {
-        // Check if we have enough quantity
         let requiredQuantity = ingredient.quantity;
+        let conversionSuccessful = true;
         
-        // Convert units if different
+        // Try to convert units if different
         if (available.unit !== ingredient.unit) {
-          requiredQuantity = convertUnits(
-            ingredient.quantity, 
-            ingredient.unit, 
-            available.unit
+          const convertedQuantity = convertUnits(
+            ingredient.quantity,
+            ingredient.unit,
+            available.unit,
+            ingredient.name
           );
+          
+          if (convertedQuantity !== null) {
+            requiredQuantity = convertedQuantity;
+          } else {
+            conversionSuccessful = false;
+            validation.conversionIssues.push({
+              ...ingredient,
+              availableUnit: available.unit,
+              message: `Cannot convert ${ingredient.unit} to ${available.unit} for ${ingredient.name}`
+            });
+          }
         }
         
-        if (available.quantity < requiredQuantity) {
+        if (conversionSuccessful && available.quantity < requiredQuantity) {
           validation.canMake = false;
           validation.insufficientIngredients.push({
             ...ingredient,
             available: available.quantity,
-            required: requiredQuantity,
-            unit: available.unit
+            required: formatConvertedQuantity(requiredQuantity),
+            unit: available.unit,
+            originalRequired: `${ingredient.quantity} ${ingredient.unit}`,
+            converted: available.unit !== ingredient.unit
           });
         }
       }

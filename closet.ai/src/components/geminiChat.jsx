@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { geminiService } from '../services/gemini/gemini';
 import { saveRecipe, validateRecipeIngredients, subtractRecipeIngredients, addHistoryEntry } from '../services/firebase/firestore';
 import './geminiChat.css';
+import { convertUnits, formatConvertedQuantity, convertRecipeToUserUnits } from '../utils/unitConversions';
+import ConversionIcon from './ConversionIcon';
 
 const STEPS = {
   SELECT_MEAL_TYPE: 0,
@@ -420,18 +422,38 @@ const handleRecipeSelect = async (recipe) => {
         
         <h3>Ingredients</h3>
         <ul className="ingredients-list detailed">
-          {recipeData.ingredients.map((ingredient, index) => (
-            <li key={index} className="ingredient-item">
-              <span className="ingredient-quantity">
-                {ingredient.quantity} {ingredient.unit}
-              </span>
-              {' '}
-              <span className="ingredient-name">{ingredient.name}</span>
-              {ingredient.preparation && (
-                <span className="ingredient-prep">, {ingredient.preparation}</span>
-              )}
-            </li>
-          ))}
+          {(() => {
+            const smartIngredients = convertRecipeToUserUnits(recipeData.ingredients, ingredients);
+            return smartIngredients.map((ingredient, index) => (
+              <li key={index} className="ingredient-item">
+                <span className="ingredient-quantity">
+                  {ingredient.displayQuantity} {ingredient.displayUnit}
+                  {ingredient.isConverted && (
+                    <span className="conversion-indicator" title={`Originally ${ingredient.originalQuantity} ${ingredient.originalUnit}`}>
+                      ✓
+                    </span>
+                  )}
+                </span>
+                {' '}
+                <span className="ingredient-name">{ingredient.name}</span>
+                {ingredient.preparation && (
+                  <span className="ingredient-prep">, {ingredient.preparation}</span>
+                )}
+                {(ingredient.hasConversion || ingredient.isConverted) && (
+                  <ConversionIcon
+                    quantity={ingredient.displayQuantity}
+                    unit={ingredient.displayUnit}
+                    ingredientName={ingredient.name}
+                    isConverted={ingredient.isConverted}
+                    originalQuantity={ingredient.originalQuantity}
+                    originalUnit={ingredient.originalUnit}
+                    userHasAmount={ingredient.userHasAmount}
+                    userUnit={ingredient.isConverted ? ingredient.displayUnit : ingredient.userUnit}
+                  />
+                )}
+              </li>
+            ));
+          })()}
         </ul>
         
         <h3>Instructions</h3>
@@ -537,16 +559,42 @@ const handleRecipeSelect = async (recipe) => {
             <h3>Complete Recipe and Update Inventory?</h3>
             <p>You've completed all steps! This will subtract the used ingredients from your pantry.</p>
             
-            <div className="ingredients-used">
-              <h4>Ingredients to be subtracted:</h4>
-              <ul>
-                {recipeData.ingredients.map((ing, idx) => (
-                  <li key={idx}>
-                    {ing.quantity} {ing.unit} {ing.name}
-                  </li>
-                ))}
-              </ul>
-            </div>
+              <div className="ingredients-used">
+                <h4>Ingredients to be subtracted (with conversions):</h4>
+                <ul>
+                  {recipeData.ingredients.map((ing, idx) => {
+                    // Find matching ingredient in pantry
+                    const pantryIngredient = ingredients.find(pIng => 
+                      pIng.name.toLowerCase() === ing.name.toLowerCase()
+                    );
+                    
+                    let displayText = `${ing.quantity} ${ing.unit} ${ing.name}`;
+                    
+                    if (pantryIngredient && pantryIngredient.unit !== ing.unit) {
+                      // Try to show conversion
+                      const convertedQuantity = convertUnits(
+                        ing.quantity,
+                        ing.unit,
+                        pantryIngredient.unit,
+                        ing.name
+                      );
+                      
+                      if (convertedQuantity !== null) {
+                        displayText += ` → ${formatConvertedQuantity(convertedQuantity)} ${pantryIngredient.unit}`;
+                      } else {
+                        displayText += ` (conversion unavailable)`;
+                      }
+                    }
+                    
+                    return (
+                      <li key={idx}>{displayText}</li>
+                    );
+                  })}
+                </ul>
+                <p style={{fontSize: '0.9em', color: '#666', marginTop: '10px'}}>
+                  Conversions are automatically calculated based on ingredient densities.
+                </p>
+              </div>
             
             <div className="completion-buttons">
               <button 
