@@ -10,7 +10,7 @@ import TestComponent from './pages/firestoreTest.jsx'
 import GeminiChat from './components/geminiChat.jsx'
 import SavedRecipes from './components/savedRecipes.jsx'
 import RecipeViewer from './components/RecipeViewer.jsx'
-import { getCollection } from './services/firebase/firestore'
+import { getCollection, cleanupOldTrashItems } from './services/firebase/firestore'
 import { useAuth } from './context/AuthContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import History from './components/History.jsx'
@@ -31,6 +31,27 @@ function MainApp() {
     } else {
       setIngredients([]);
       setLoading(false);
+    }
+  }, [currentUser]);
+
+  // Effect to cleanup old trash items periodically
+  useEffect(() => {
+    if (currentUser) {
+      const cleanupTrash = async () => {
+        try {
+          await cleanupOldTrashItems();
+        } catch (error) {
+          console.error('Error with automatic trash cleanup:', error);
+        }
+      };
+      
+      // Cleanup on mount
+      cleanupTrash();
+      
+      // Set up periodic cleanup (every hour)
+      const interval = setInterval(cleanupTrash, 60 * 60 * 1000);
+      
+      return () => clearInterval(interval);
     }
   }, [currentUser]);
   

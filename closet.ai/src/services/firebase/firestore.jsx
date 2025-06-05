@@ -26,7 +26,7 @@ const getCurrentUserId = () => {
   return user.uid;
 };
 
-// Update ingredient with all fields (user-specific)
+// Update ingredient with automatic trash handling
 export const updateIngredient = async (ingredientId, ingredientData) => {
   try {
     const userId = getCurrentUserId();
@@ -49,6 +49,15 @@ export const updateIngredient = async (ingredientId, ingredientData) => {
       updatedAt: Timestamp.now(),
       userId: userId
     };
+
+    // Handle trash status based on quantity
+    if (updateData.quantity <= 0) {
+      updateData.inTrash = true;
+      updateData.trashedAt = updateData.trashedAt || Timestamp.now();
+    } else {
+      updateData.inTrash = false;
+      updateData.trashedAt = null;
+    }
 
     if (ingredientData.expirationDate) {
       updateData.expirationDate = ingredientData.expirationDate instanceof Date 
@@ -73,8 +82,19 @@ export const updateIngredient = async (ingredientId, ingredientData) => {
     }
 
     if (changes.length > 0) {
+      let historyType = 'ingredient_updated';
+      let description = `Updated ${ingredientData.name}: ${changes.join(', ')}`;
+      
+      if (updateData.quantity <= 0 && !oldData.inTrash) {
+        historyType = 'ingredient_trashed';
+        description = `${description} (moved to trash - quantity reached 0)`;
+      } else if (updateData.quantity > 0 && oldData.inTrash) {
+        historyType = 'ingredient_restored';
+        description = `${description} (restored from trash)`;
+      }
+
       await addHistoryEntry({
-        type: 'ingredient_updated',
+        type: historyType,
         action: 'Updated ingredient',
         details: {
           ingredientName: ingredientData.name,
@@ -88,9 +108,11 @@ export const updateIngredient = async (ingredientId, ingredientData) => {
             quantity: parseFloat(ingredientData.quantity),
             unit: ingredientData.unit
           },
-          changes: changes
+          changes: changes,
+          movedToTrash: updateData.quantity <= 0 && !oldData.inTrash,
+          restoredFromTrash: updateData.quantity > 0 && oldData.inTrash
         },
-        description: `Updated ${ingredientData.name}: ${changes.join(', ')}`
+        description: description
       });
     }
 
@@ -155,10 +177,26 @@ export const getSavedRecipes = async () => {
   }
 };
 
-// Add ingredient with quantity tracking (user-specific)
+// Add ingredient with duplicate checking and trash cleanup
 export const addIngredient = async (ingredientData) => {
   try {
     const userId = getCurrentUserId();
+    
+    // Check for duplicates
+    const duplicateCheck = await checkForDuplicateIngredient(ingredientData.name);
+    
+    if (duplicateCheck.hasActive) {
+      throw new Error('DUPLICATE_ACTIVE');
+    }
+    
+    // If there are trashed ingredients with the same name, delete them
+    if (duplicateCheck.hasTrashed) {
+      const batch = writeBatch(db);
+      duplicateCheck.trashedIngredients.forEach(trashedItem => {
+        batch.delete(doc(db, 'ingredients', trashedItem.id));
+      });
+      await batch.commit();
+    }
     
     const docRef = await addDoc(collection(db, 'ingredients'), {
       name: ingredientData.name,
@@ -167,6 +205,8 @@ export const addIngredient = async (ingredientData) => {
       category: ingredientData.category || 'Other',
       expirationDate: ingredientData.expirationDate || null,
       userId: userId,
+      inTrash: false,
+      trashedAt: null,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now()
     });
@@ -490,21 +530,34 @@ export const getDocument = async (collectionName, docId) => {
   }
 };
 
-// Updated getCollection to be user-specific
-export const getCollection = async (collectionName, userIdOverride = null) => {
+// Updated getCollection to handle missing inTrash field
+export const getCollection = async (collectionName, userIdOverride = null, includeTrash = false) => {
   const array = [];
   try {
     const userId = userIdOverride || getCurrentUserId();
     
-    const querySnapshot = await getDocs(
-      query(
-        collection(db, collectionName),
-        where('userId', '==', userId)
-      )
+    let q = query(
+      collection(db, collectionName),
+      where('userId', '==', userId)
     );
     
+    const querySnapshot = await getDocs(q);
+    
     querySnapshot.forEach((doc) => {
-      array.push({ id: doc.id, ...doc.data() });
+      const data = doc.data();
+      
+      // For ingredients collection, filter based on trash status
+      if (collectionName === 'ingredients') {
+        // If includeTrash is false, only include items that are not in trash
+        // This handles both inTrash: false and missing inTrash field
+        if (!includeTrash && data.inTrash === true) {
+          return; // Skip items that are explicitly in trash
+        }
+        // If includeTrash is true, include everything
+        // If inTrash field is missing, treat as not in trash (for backward compatibility)
+      }
+      
+      array.push({ id: doc.id, ...data });
     });
   } catch (error) {
     throw error;
@@ -670,6 +723,204 @@ export const getHistoryByDateRange = async (startDate, endDate) => {
     }));
   } catch (error) {
     console.error('Error getting history by date range:', error);
+    throw error;
+  }
+};
+
+// Trash-related functions
+export const moveToTrash = async (ingredientId) => {
+  try {
+    const userId = getCurrentUserId();
+    const docRef = doc(db, 'ingredients', ingredientId);
+    
+    // First check if the ingredient belongs to the current user
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists() || docSnap.data().userId !== userId) {
+      throw new Error('Ingredient not found or access denied');
+    }
+    
+    const ingredientData = docSnap.data();
+    
+    await updateDoc(docRef, {
+      inTrash: true,
+      trashedAt: Timestamp.now(),
+      updatedAt: Timestamp.now()
+    });
+
+    // Add history entry
+    await addHistoryEntry({
+      type: 'ingredient_trashed',
+      action: 'Moved ingredient to trash',
+      details: {
+        ingredientName: ingredientData.name,
+        quantity: ingredientData.quantity,
+        unit: ingredientData.unit
+      },
+      description: `Moved ${ingredientData.name} to trash (quantity reached 0)`
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error moving ingredient to trash:', error);
+    throw error;
+  }
+};
+
+export const restoreFromTrash = async (ingredientId) => {
+  try {
+    const userId = getCurrentUserId();
+    const docRef = doc(db, 'ingredients', ingredientId);
+    
+    // First check if the ingredient belongs to the current user
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists() || docSnap.data().userId !== userId) {
+      throw new Error('Ingredient not found or access denied');
+    }
+    
+    const ingredientData = docSnap.data();
+    
+    await updateDoc(docRef, {
+      inTrash: false,
+      trashedAt: null,
+      updatedAt: Timestamp.now()
+    });
+
+    // Add history entry
+    await addHistoryEntry({
+      type: 'ingredient_restored',
+      action: 'Restored ingredient from trash',
+      details: {
+        ingredientName: ingredientData.name,
+        quantity: ingredientData.quantity,
+        unit: ingredientData.unit
+      },
+      description: `Restored ${ingredientData.name} from trash`
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error restoring ingredient from trash:', error);
+    throw error;
+  }
+};
+
+export const permanentlyDeleteIngredient = async (ingredientId) => {
+  try {
+    const userId = getCurrentUserId();
+    const docRef = doc(db, 'ingredients', ingredientId);
+    
+    // First check if the ingredient belongs to the current user
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists() || docSnap.data().userId !== userId) {
+      throw new Error('Ingredient not found or access denied');
+    }
+    
+    const ingredientData = docSnap.data();
+    
+    await deleteDoc(docRef);
+
+    // Add history entry
+    await addHistoryEntry({
+      type: 'ingredient_deleted',
+      action: 'Permanently deleted ingredient',
+      details: {
+        ingredientName: ingredientData.name,
+        quantity: ingredientData.quantity,
+        unit: ingredientData.unit
+      },
+      description: `Permanently deleted ${ingredientData.name}`
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error permanently deleting ingredient:', error);
+    throw error;
+  }
+};
+
+export const getTrashIngredients = async () => {
+  try {
+    const userId = getCurrentUserId();
+    
+    const querySnapshot = await getDocs(
+      query(
+        collection(db, 'ingredients'),
+        where('userId', '==', userId),
+        where('inTrash', '==', true),
+        orderBy('trashedAt', 'desc')
+      )
+    );
+    
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting trash ingredients:', error);
+    throw error;
+  }
+};
+
+export const cleanupOldTrashItems = async () => {
+  try {
+    const userId = getCurrentUserId();
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    
+    const querySnapshot = await getDocs(
+      query(
+        collection(db, 'ingredients'),
+        where('userId', '==', userId),
+        where('inTrash', '==', true),
+        where('trashedAt', '<=', Timestamp.fromDate(twentyFourHoursAgo))
+      )
+    );
+    
+    const batch = writeBatch(db);
+    querySnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    if (querySnapshot.docs.length > 0) {
+      await batch.commit();
+      console.log(`Cleaned up ${querySnapshot.docs.length} old trash items`);
+    }
+    
+    return querySnapshot.docs.length;
+  } catch (error) {
+    console.error('Error cleaning up trash items:', error);
+    throw error;
+  }
+};
+
+export const checkForDuplicateIngredient = async (ingredientName) => {
+  try {
+    const userId = getCurrentUserId();
+    
+    // Check for active ingredients (not in trash)
+    const activeQuery = query(
+      collection(db, 'ingredients'),
+      where('userId', '==', userId),
+      where('name', '==', ingredientName.trim())
+    );
+    
+    const activeSnapshot = await getDocs(activeQuery);
+    const activeIngredients = activeSnapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(ing => !ing.inTrash);
+    
+    // Check for trashed ingredients
+    const trashedIngredients = activeSnapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(ing => ing.inTrash);
+    
+    return {
+      hasActive: activeIngredients.length > 0,
+      hasTrashed: trashedIngredients.length > 0,
+      activeIngredient: activeIngredients[0] || null,
+      trashedIngredients: trashedIngredients
+    };
+  } catch (error) {
+    console.error('Error checking for duplicate ingredient:', error);
     throw error;
   }
 };

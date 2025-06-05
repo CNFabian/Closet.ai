@@ -1,6 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './firestoreTest.css';
-import { addIngredient, updateIngredient } from '../services/firebase/firestore'
+import { 
+  addIngredient, 
+  updateIngredient, 
+  moveToTrash, 
+  restoreFromTrash, 
+  permanentlyDeleteIngredient, 
+  getTrashIngredients, 
+  cleanupOldTrashItems 
+} from '../services/firebase/firestore'
 
 const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
   const categories = [
@@ -29,6 +37,9 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
   const [editData, setEditData] = useState({});
   const [originalEditData, setOriginalEditData] = useState({});
   const [showSavePrompt, setShowSavePrompt] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
+  const [trashIngredients, setTrashIngredients] = useState([]);
+  const [loadingTrash, setLoadingTrash] = useState(false);
   
   // Keep track of current category separately
   const [currentCategory, setCurrentCategory] = useState('Vegetables');
@@ -41,6 +52,26 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
     hasExpirationDate: false,
     expirationDate: ''
   });
+
+  // Effect to fetch trash when showing trash
+  useEffect(() => {
+    if (showTrash) {
+      fetchTrashIngredients();
+    }
+  }, [showTrash]);
+
+  // Effect to cleanup old trash items on component mount
+  useEffect(() => {
+    const cleanup = async () => {
+      try {
+        await cleanupOldTrashItems();
+      } catch (error) {
+        console.error('Error with automatic trash cleanup:', error);
+      }
+    };
+    
+    cleanup();
+  }, []);
 
   const getAvailableUnits = (category) => {
     return unitsByCategory[category] || unitsByCategory['Other'];
@@ -86,7 +117,7 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
 
     setLoading(true);
     setMessage('');
-   
+  
     try {
       const ingredientData = {
         name: formData.name.trim(),
@@ -118,7 +149,94 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
       });
     } catch (error) {
       console.error("Error adding ingredient: ", error);
-      setMessage('Error adding ingredient. Please try again.');
+      if (error.message === 'DUPLICATE_ACTIVE') {
+        setMessage('An ingredient with this name already exists in your pantry. Please edit the existing ingredient or use a different name.');
+      } else {
+        setMessage('Error adding ingredient. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchTrashIngredients = async () => {
+    try {
+      setLoadingTrash(true);
+      console.log('Fetching trash ingredients...');
+      const trashItems = await getTrashIngredients();
+      console.log('Fetched trash items:', trashItems);
+      setTrashIngredients(trashItems);
+    } catch (error) {
+      console.error('Error fetching trash ingredients:', error);
+      // Don't show error message for index issues when there's no data
+      if (!error.message.includes('index')) {
+        setMessage('Error loading trash items');
+      }
+      // Set empty array so UI still works
+      setTrashIngredients([]);
+    } finally {
+      setLoadingTrash(false);
+    }
+  };
+
+  const handleRestoreFromTrash = async (ingredientId) => {
+    try {
+      setLoading(true);
+      await restoreFromTrash(ingredientId);
+      
+      if (updateIngredients) {
+        await updateIngredients();
+      }
+      await fetchTrashIngredients();
+      
+      setMessage('Ingredient restored from trash!');
+    } catch (error) {
+      console.error('Error restoring ingredient:', error);
+      setMessage('Error restoring ingredient. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePermanentDelete = async (ingredientId) => {
+    if (!confirm('Are you sure you want to permanently delete this ingredient? This cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      await permanentlyDeleteIngredient(ingredientId);
+      await fetchTrashIngredients();
+      
+      setMessage('Ingredient permanently deleted!');
+    } catch (error) {
+      console.error('Error permanently deleting ingredient:', error);
+      setMessage('Error deleting ingredient. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCleanupTrash = async () => {
+    try {
+      setLoading(true);
+      console.log('Cleaning up trash...');
+      const deletedCount = await cleanupOldTrashItems();
+      await fetchTrashIngredients();
+      
+      if (deletedCount > 0) {
+        setMessage(`Cleaned up ${deletedCount} old items from trash`);
+      } else {
+        setMessage('No old items to clean up');
+      }
+    } catch (error) {
+      console.error('Error cleaning up trash:', error);
+      // Don't show error for index issues
+      if (!error.message.includes('index')) {
+        setMessage('Error cleaning up trash. Please try again.');
+      } else {
+        setMessage('No items to clean up');
+      }
     } finally {
       setLoading(false);
     }
@@ -612,39 +730,152 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
       {message && <p className="message">{message}</p>}
       
       <div className="cached-ingredients">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h2>Your Pantry Inventory ({cachedIngredients.length} items):</h2>
-          
-          <div className="display-mode-selector">
-            <label style={{ marginRight: '10px', fontSize: '14px', color: '#666' }}>View:</label>
-            <select 
-              value={displayMode} 
-              onChange={(e) => setDisplayMode(e.target.value)}
-              disabled={editingId !== null}
-              style={{ 
-                padding: '5px 10px', 
-                borderRadius: '4px', 
-                border: '1px solid #ddd',
-                fontSize: '14px'
-              }}
-            >
-              <option value="grid">Grid View</option>
-              <option value="chips">Compact Chips</option>
-              <option value="category">By Category</option>
-            </select>
+          {/* Trash toggle button */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2>Your Pantry Inventory ({cachedIngredients.length} items):</h2>
+            
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <button 
+                onClick={() => setShowTrash(!showTrash)}
+                disabled={loading}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: showTrash ? '#dc3545' : '#6c757d',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                {showTrash ? 'Hide Trash' : 'Show Trash'}
+              </button>
+              
+              {showTrash && (
+                <button 
+                  onClick={handleCleanupTrash}
+                  disabled={loading}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#ffc107',
+                    color: '#212529',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                >
+                  Clean Trash
+                </button>
+              )}
+              
+              <div className="display-mode-selector">
+                <label style={{ marginRight: '10px', fontSize: '14px', color: '#666' }}>View:</label>
+                <select 
+                  value={displayMode} 
+                  onChange={(e) => setDisplayMode(e.target.value)}
+                  disabled={editingId !== null}
+                  style={{ 
+                    padding: '5px 10px', 
+                    borderRadius: '4px', 
+                    border: '1px solid #ddd',
+                    fontSize: '14px'
+                  }}
+                >
+                  <option value="grid">Grid View</option>
+                  <option value="chips">Compact Chips</option>
+                  <option value="category">By Category</option>
+                </select>
+              </div>
+            </div>
           </div>
+
+          {/* Conditional rendering for active ingredients or trash */}
+          {showTrash ? (
+            <div className="trash-section">
+              <h3>Trash ({trashIngredients.length} items)</h3>
+              {loadingTrash ? (
+                <p>Loading trash items...</p>
+              ) : trashIngredients.length > 0 ? (
+                <div className="trash-items">
+                  {trashIngredients.map((ingredient) => (
+                    <div key={ingredient.id} className="trash-item" style={{
+                      background: '#f8f9fa',
+                      border: '1px solid #dee2e6',
+                      borderRadius: '8px',
+                      padding: '15px',
+                      margin: '10px 0',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <div>
+                        <strong>{ingredient.name}</strong>
+                        <div style={{ fontSize: '14px', color: '#6c757d' }}>
+                          {ingredient.quantity} {ingredient.unit} • {ingredient.category}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#dc3545' }}>
+                          Trashed: {ingredient.trashedAt?.toDate ? 
+                            ingredient.trashedAt.toDate().toLocaleString() : 
+                            new Date(ingredient.trashedAt).toLocaleString()
+                          }
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <button
+                          onClick={() => handleRestoreFromTrash(ingredient.id)}
+                          disabled={loading}
+                          style={{
+                            padding: '6px 12px',
+                            backgroundColor: '#28a745',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '12px'
+                          }}
+                        >
+                          Restore
+                        </button>
+                        <button
+                          onClick={() => handlePermanentDelete(ingredient.id)}
+                          disabled={loading}
+                          style={{
+                            padding: '6px 12px',
+                            backgroundColor: '#dc3545',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '12px'
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ textAlign: 'center', color: '#6c757d', fontStyle: 'italic' }}>
+                  No items in trash
+                </p>
+              )}
+            </div>
+          ) : (
+            <>
+              {cachedIngredients.length > 0 ? (
+                <>
+                  {displayMode === 'grid' && renderGridView()}
+                  {displayMode === 'chips' && renderChipsView()}
+                  {displayMode === 'category' && renderCategoryView()}
+                </>
+              ) : (
+                <p>No ingredients in your pantry yet.</p>
+              )}
+            </>
+          )}
         </div>
-        
-        {cachedIngredients.length > 0 ? (
-          <>
-            {displayMode === 'grid' && renderGridView()}
-            {displayMode === 'chips' && renderChipsView()}
-            {displayMode === 'category' && renderCategoryView()}
-          </>
-        ) : (
-          <p>No ingredients in your pantry yet.</p>
-        )}
-      </div>
 
       {editingId && renderEditForm(cachedIngredients.find(ing => ing.id === editingId))}
 
