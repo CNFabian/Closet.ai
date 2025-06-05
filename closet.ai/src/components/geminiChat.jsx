@@ -31,6 +31,7 @@ function GeminiChat({ ingredients = [], onIngredientsUpdated }) {
   const [temperature, setTemperature] = useState(0.7);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
+  const [desiredServings, setDesiredServings] = useState(4);
 
   // Handle saving recipes
   const handleSaveRecipe = async () => {
@@ -111,65 +112,67 @@ function GeminiChat({ ingredients = [], onIngredientsUpdated }) {
     }
   };
 
-// Step 2: Validate and get recipe details
-const handleRecipeSelect = async (recipe) => {
-  setSelectedRecipe(recipe);
-  setLoading(true);
-  setError('');
-  
-  try {
-    // First validate that we can make this recipe with available ingredients
-    setCurrentStep(STEPS.RECIPE_VALIDATION);
+  // Step 2: Validate and get recipe details
+  const handleRecipeSelect = async (recipe) => {
+    setSelectedRecipe(recipe);
+    setLoading(true);
+    setError('');
     
-    const result = await geminiService.getRecipeDetails(recipe, ingredients, temperature);
-    
-    if (result.json && result.json.recipe) {
-      // Set recipe data first
-      setRecipeData(result.json.recipe);
+    try {
+      // First validate that we can make this recipe with available ingredients
+      setCurrentStep(STEPS.RECIPE_VALIDATION);
       
-      // Track recipe generation in history (only once, after successful generation)
-      try {
-        await addHistoryEntry({
-          type: 'recipe_generated',
-          action: 'Generated recipe',
-          details: {
-            recipeName: recipe,
-            mealType: mealType,
-            ingredientCount: ingredients.length,
-            generatedRecipe: {
-              name: result.json.recipe.name,
-              difficulty: result.json.recipe.difficulty,
-              servings: result.json.recipe.servings
-            }
-          },
-          description: `Generated ${mealType} recipe: ${result.json.recipe.name}`
-        });
-      } catch (historyError) {
-        // Log history error but don't fail the recipe generation
-        console.error('Error adding history entry:', historyError);
-      }
+      // Pass the desired servings to recipe generation
+      const result = await geminiService.getRecipeDetails(recipe, ingredients, temperature, desiredServings);
       
-      // Validate the recipe against available ingredients
-      const validation = await validateRecipeIngredients(result.json.recipe.ingredients);
-      setRecipeValidation(validation);
-      
-      if (validation.canMake) {
-        setCurrentStep(STEPS.RECIPE_DETAILS);
-        setCurrentInstructionIndex(0);
+      if (result.json && result.json.recipe) {
+        // Set recipe data first
+        setRecipeData(result.json.recipe);
+        
+        // Track recipe generation in history (only once, after successful generation)
+        try {
+          await addHistoryEntry({
+            type: 'recipe_generated',
+            action: 'Generated recipe',
+            details: {
+              recipeName: recipe,
+              mealType: mealType,
+              ingredientCount: ingredients.length,
+              desiredServings: desiredServings, // Add this
+              generatedRecipe: {
+                name: result.json.recipe.name,
+                difficulty: result.json.recipe.difficulty,
+                servings: result.json.recipe.servings
+              }
+            },
+            description: `Generated ${mealType} recipe: ${result.json.recipe.name} for ${desiredServings} servings`
+          });
+        } catch (historyError) {
+          // Log history error but don't fail the recipe generation
+          console.error('Error adding history entry:', historyError);
+        }
+        
+        // Validate the recipe against available ingredients
+        const validation = await validateRecipeIngredients(result.json.recipe.ingredients);
+        setRecipeValidation(validation);
+        
+        if (validation.canMake) {
+          setCurrentStep(STEPS.RECIPE_DETAILS);
+          setCurrentInstructionIndex(0);
+        } else {
+          // Show validation issues but still allow user to proceed if they want
+          setCurrentStep(STEPS.RECIPE_VALIDATION);
+        }
       } else {
-        // Show validation issues but still allow user to proceed if they want
-        setCurrentStep(STEPS.RECIPE_VALIDATION);
+        throw new Error('Failed to get recipe details in the correct format. Please try again.');
       }
-    } else {
-      throw new Error('Failed to get recipe details in the correct format. Please try again.');
+    } catch (error) {
+      console.error('Error getting recipe details:', error);
+      setError(error.message || 'Failed to get recipe details. Please try again.');
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error('Error getting recipe details:', error);
-    setError(error.message || 'Failed to get recipe details. Please try again.');
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   // Proceed with recipe despite validation issues
   const proceedWithRecipe = () => {
@@ -239,6 +242,7 @@ const handleRecipeSelect = async (recipe) => {
     setRecipeValidation(null);
     setCurrentInstructionIndex(0);
     setShowCompletionConfirm(false);
+    setDesiredServings(4); // Add this line
     setError('');
   };
 
@@ -303,6 +307,28 @@ const handleRecipeSelect = async (recipe) => {
         <div className="step recipe-selection">
           <h2>Choose a Recipe to Make</h2>
           <p>Based on your available ingredients, here are some {mealType} ideas:</p>
+          
+          {/* Serving size selector */}
+          <div className="serving-size-selector">
+            <label htmlFor="servings-slider">
+              Servings: <span className="servings-display">{desiredServings}</span>
+            </label>
+            <input
+              type="range"
+              id="servings-slider"
+              min="1"
+              max="12"
+              value={desiredServings}
+              onChange={(e) => setDesiredServings(parseInt(e.target.value))}
+              className="servings-slider"
+              disabled={loading}
+            />
+            <div className="slider-range">
+              <span>1</span>
+              <span>12</span>
+            </div>
+          </div>
+          
           <div className="recipe-options">
             {recipeOptions.map((recipe, index) => (
               <button

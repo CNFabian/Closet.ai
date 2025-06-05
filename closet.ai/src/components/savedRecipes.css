@@ -160,6 +160,122 @@
   box-shadow: 0 2px 8px rgba(142, 36, 170, 0.3);
 }
 
+/* Saved recipe card updates */
+.recipe-card {
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0e0e0;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.recipe-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.recipe-card-content {
+  padding: 20px;
+  cursor: pointer;
+  flex: 1;
+}
+
+.serving-adjustment {
+  background-color: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+  padding: 15px;
+  text-align: center;
+}
+
+.serving-adjustment label {
+  display: block;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+}
+
+.serving-adjustment .servings-display {
+  color: orange;
+  font-weight: 700;
+  margin-left: 5px;
+}
+
+.servings-slider.small {
+  width: 100%;
+  max-width: 200px;
+  height: 6px;
+  border-radius: 3px;
+  background: #ddd;
+  outline: none;
+  margin: 8px 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.servings-slider.small::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, orange 0%, #ff8a00 100%);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(255, 165, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.servings-slider.small::-webkit-slider-thumb:hover {
+  transform: scale(1.05);
+  box-shadow: 0 3px 8px rgba(255, 165, 0, 0.4);
+}
+
+.servings-slider.small::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, orange 0%, #ff8a00 100%);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 6px rgba(255, 165, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.slider-range.small {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-top: 3px;
+  max-width: 200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.adjustment-note {
+  font-size: 0.8rem;
+  color: #28a745;
+  font-style: italic;
+  margin-top: 8px;
+}
+
+@media (max-width: 768px) {
+  .serving-adjustment {
+    padding: 12px;
+  }
+  
+  .servings-slider.small {
+    max-width: 150px;
+  }
+  
+  .slider-range.small {
+    max-width: 150px;
+  }
+}
+
 /* Responsive adjustments for saved recipes */
 @media (max-width: 768px) {
   .saved-recipes-container {

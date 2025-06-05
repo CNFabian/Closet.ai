@@ -101,121 +101,125 @@ export const geminiService = {
   },
   
   // Get detailed recipe instructions with quantity validation
-  async getRecipeDetails(recipe, ingredients, temperature = 0.2) {
-    try {
-      // Format ingredients with quantities
-      const ingredientsText = formatIngredientsWithQuantities(ingredients);
+async getRecipeDetails(recipe, ingredients, temperature = 0.2, desiredServings = 4) {
+  try {
+    // Format ingredients with quantities
+    const ingredientsText = formatIngredientsWithQuantities(ingredients);
+    
+    const customPrompt = `
+      I have these ingredients in my kitchen with EXACT quantities:
+      ${ingredientsText}
       
-      const customPrompt = `
-        I have these ingredients in my kitchen with EXACT quantities:
-        ${ingredientsText}
-        
-        Create a recipe for "${recipe}" using ONLY these ingredients with their available quantities.
-        
-        CRITICAL CONSTRAINTS:
-        - NEVER use more of any ingredient than what's available
-        - If the standard recipe calls for more than available, adjust the recipe size down
-        - Clearly state actual servings based on ingredient limitations
-        - Use realistic quantities that don't exceed what's in my pantry
-        
-        YOU MUST RESPOND WITH VALID JSON ONLY, with no text before or after. Do not include markdown code blocks.
-        
-        The JSON must follow this exact structure:
-        {
-          "recipe": {
-            "name": "${recipe}",
-            "description": "A brief description noting any quantity adjustments",
-            "prepTime": "X minutes",
-            "cookTime": "Y minutes", 
-            "totalTime": "Z minutes",
-            "servings": 4,
-            "difficulty": "Easy/Medium/Hard",
-            "ingredients": [
-              {
-                "name": "Ingredient name",
-                "quantity": 1,
-                "unit": "cup",
-                "preparation": "chopped"
-              }
-            ],
-            "instructions": [
-              {
-                "stepNumber": 1,
-                "instruction": "Step instructions",
-                "duration": 5,
-                "tip": "Helpful tip",
-                "ingredients": ["ingredient1", "ingredient2"],
-                "equipment": ["tool1", "tool2"]
-              }
-            ],
-            "tags": ["tag1", "tag2", "tag3"],
-            "actualYield": "Actual servings based on available ingredients"
-          }
-        }
-        
-        IMPORTANT FORMATTING REQUIREMENTS:
-        1. Each ingredient must be properly structured with separate name, quantity, unit, and preparation fields
-        2. Do not use any markdown formatting
-        3. The "name" field should only contain the ingredient name
-        4. The "quantity" field should be a number that DOES NOT EXCEED available amounts
-        5. The "unit" field should match or be convertible to available units
-        6. Include "actualYield" field to show adjusted serving size
-      `;
+      Create a recipe for "${recipe}" using ONLY these ingredients with their available quantities.
+      The recipe should be designed for ${desiredServings} servings.
       
-      console.log("Requesting quantity-aware recipe details for:", recipe);
-      const result = await this.generateContent(customPrompt, temperature);
+      CRITICAL CONSTRAINTS:
+      - NEVER use more of any ingredient than what's available
+      - If the standard recipe calls for more than available, adjust the recipe size down
+      - Design the recipe specifically for ${desiredServings} servings
+      - Adjust cooking times, temperatures, and methods appropriately for ${desiredServings} servings
+      - Use realistic quantities that don't exceed what's in my pantry
       
-      console.log("Raw recipe details response:", result.text);
+      YOU MUST RESPOND WITH VALID JSON ONLY, with no text before or after. Do not include markdown code blocks.
       
-      try {
-        // Clean up the response text
-        let jsonString = result.text.trim();
-        
-        // Remove any markdown code block indicators if present
-        if (jsonString.startsWith("```json")) {
-          jsonString = jsonString.replace(/^```json\n/, "").replace(/\n```$/, "");
-        } else if (jsonString.startsWith("```")) {
-          jsonString = jsonString.replace(/^```\n/, "").replace(/\n```$/, "");
+      The JSON must follow this exact structure:
+      {
+        "recipe": {
+          "name": "${recipe}",
+          "description": "A brief description noting any quantity adjustments",
+          "prepTime": "X minutes",
+          "cookTime": "Y minutes", 
+          "totalTime": "Z minutes",
+          "servings": ${desiredServings},
+          "difficulty": "Easy/Medium/Hard",
+          "ingredients": [
+            {
+              "name": "Ingredient name",
+              "quantity": 1,
+              "unit": "cup",
+              "preparation": "chopped"
+            }
+          ],
+          "instructions": [
+            {
+              "stepNumber": 1,
+              "instruction": "Step instructions adjusted for ${desiredServings} servings",
+              "duration": 5,
+              "tip": "Helpful tip",
+              "ingredients": ["ingredient1", "ingredient2"],
+              "equipment": ["tool1", "tool2"]
+            }
+          ],
+          "tags": ["tag1", "tag2", "tag3"],
+          "actualYield": "Actual servings based on available ingredients"
         }
-        
-        // Find the JSON object
-        const firstBraceIndex = jsonString.indexOf('{');
-        const lastBraceIndex = jsonString.lastIndexOf('}');
-        
-        if (firstBraceIndex !== -1 && lastBraceIndex > firstBraceIndex) {
-          jsonString = jsonString.substring(firstBraceIndex, lastBraceIndex + 1);
-        }
-        
-        // Parse the JSON
-        const jsonResult = JSON.parse(jsonString);
-        
-        // Validate the structure
-        if (!jsonResult.recipe) {
-          throw new Error("JSON response is missing the 'recipe' object");
-        }
-        
-        // Additional validation: check if recipe quantities don't exceed available
-        if (jsonResult.recipe.ingredients) {
-          const validation = this.validateRecipeQuantities(jsonResult.recipe.ingredients, ingredients);
-          if (!validation.isValid) {
-            console.warn("Recipe validation warnings:", validation.warnings);
-            // Still return the recipe but log warnings
-          }
-        }
-        
-        return {
-          json: jsonResult,
-          text: result.text
-        };
-      } catch (parseError) {
-        console.error('Error parsing JSON:', parseError);
-        throw new Error('Failed to get recipe details in the correct format. Please try again.');
       }
-    } catch (error) {
-      console.error('Error getting recipe details:', error);
-      throw error;
+      
+      IMPORTANT FORMATTING REQUIREMENTS:
+      1. Each ingredient must be properly structured with separate name, quantity, unit, and preparation fields
+      2. Do not use any markdown formatting
+      3. The "name" field should only contain the ingredient name
+      4. The "quantity" field should be a number that DOES NOT EXCEED available amounts
+      5. The "unit" field should match or be convertible to available units
+      6. Include "actualYield" field to show adjusted serving size
+      7. Adjust cooking methods, temperatures, and times for ${desiredServings} servings
+      8. Scale ingredient quantities proportionally for ${desiredServings} servings
+    `;
+    
+    console.log("Requesting quantity-aware recipe details for:", recipe, "servings:", desiredServings);
+    const result = await this.generateContent(customPrompt, temperature);
+    
+    console.log("Raw recipe details response:", result.text);
+    
+    try {
+      // Clean up the response text
+      let jsonString = result.text.trim();
+      
+      // Remove any markdown code block indicators if present
+      if (jsonString.startsWith("```json")) {
+        jsonString = jsonString.replace(/^```json\n/, "").replace(/\n```$/, "");
+      } else if (jsonString.startsWith("```")) {
+        jsonString = jsonString.replace(/^```\n/, "").replace(/\n```$/, "");
+      }
+      
+      // Find the JSON object
+      const firstBraceIndex = jsonString.indexOf('{');
+      const lastBraceIndex = jsonString.lastIndexOf('}');
+      
+      if (firstBraceIndex !== -1 && lastBraceIndex > firstBraceIndex) {
+        jsonString = jsonString.substring(firstBraceIndex, lastBraceIndex + 1);
+      }
+      
+      // Parse the JSON
+      const jsonResult = JSON.parse(jsonString);
+      
+      // Validate the structure
+      if (!jsonResult.recipe) {
+        throw new Error("JSON response is missing the 'recipe' object");
+      }
+      
+      // Additional validation: check if recipe quantities don't exceed available
+      if (jsonResult.recipe.ingredients) {
+        const validation = this.validateRecipeQuantities(jsonResult.recipe.ingredients, ingredients);
+        if (!validation.isValid) {
+          console.warn("Recipe validation warnings:", validation.warnings);
+          // Still return the recipe but log warnings
+        }
+      }
+      
+      return {
+        json: jsonResult,
+        text: result.text
+      };
+    } catch (parseError) {
+      console.error('Error parsing JSON:', parseError);
+      throw new Error('Failed to get recipe details in the correct format. Please try again.');
     }
-  },
+  } catch (error) {
+    console.error('Error getting recipe details:', error);
+    throw error;
+  }
+},
   
   // Validate that recipe doesn't exceed available quantities
 validateRecipeQuantities(recipeIngredients, availableIngredients) {
