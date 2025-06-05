@@ -276,6 +276,43 @@
   }
 }
 
+/* Loading and error states for recipe adjustment */
+.adjusting-indicator {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-top: 10px;
+  font-size: 0.85rem;
+  text-align: center;
+  font-style: italic;
+}
+
+.adjustment-error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-top: 10px;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.adjustment-note {
+  font-size: 0.8rem;
+  color: #007bff;
+  font-style: italic;
+  margin-top: 8px;
+}
+
+/* Prevent clicking while adjusting */
+.recipe-card-content:has(+ .serving-adjustment input:disabled) {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
 /* Responsive adjustments for saved recipes */
 @media (max-width: 768px) {
   .saved-recipes-container {
