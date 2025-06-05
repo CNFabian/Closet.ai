@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { geminiService } from '../services/gemini/gemini';
 import { saveRecipe, validateRecipeIngredients, subtractRecipeIngredients, addHistoryEntry } from '../services/firebase/firestore';
 import './geminiChat.css';
-import { convertUnits, formatConvertedQuantity, convertRecipeToUserUnits } from '../utils/unitConversions';
+import { convertUnits, formatConvertedQuantity, convertToRecipeDisplay } from '../utils/unitConversions';
 import ConversionIcon from './ConversionIcon';
 
 const STEPS = {
@@ -199,27 +199,31 @@ const handleRecipeSelect = async (recipe) => {
     }
   };
 
-  // Complete recipe and update inventory
   const handleCompleteRecipe = async () => {
-    if (!recipeData) return;
+    if (!scaledRecipe) return;
     
     setLoading(true);
+    setError('');
     
     try {
-      // Subtract used ingredients from inventory
-      await subtractRecipeIngredients(recipeData.ingredients);
+      // Subtract used ingredients from inventory using scaled amounts
+      await subtractRecipeIngredients(scaledRecipe.ingredients);
       
-      setCurrentStep(STEPS.RECIPE_COMPLETION);
       setShowCompletionConfirm(false);
       
-      // Refresh ingredients in parent component
+      // Notify parent component to refresh ingredients if callback provided
       if (onIngredientsUpdated) {
-        await onIngredientsUpdated();
+        onIngredientsUpdated();
       }
+      
+      // Show success message and optionally go back
+      alert('Recipe completed! Your ingredient inventory has been updated.');
       
     } catch (error) {
       console.error('Error updating inventory:', error);
       setError('Failed to update inventory. Please check your ingredient quantities manually.');
+      // Still close the modal even if there's an error
+      setShowCompletionConfirm(false);
     } finally {
       setLoading(false);
     }
@@ -378,10 +382,33 @@ const handleRecipeSelect = async (recipe) => {
           </div>
         </div>
       )}
+
       
 {/* Step 4: Recipe Details and Instructions */}
 {currentStep === STEPS.RECIPE_DETAILS && recipeData && (
   <div className="recipe-viewer-container">
+    <div className="serving-size-controls">
+    <label htmlFor="servings-input">
+      Adjust serving size: 
+      <input 
+        type="number" 
+        id="servings-input"
+        min="1" 
+        max="20" 
+        value={recipeData.servings} 
+        onChange={(e) => {
+          const newServings = parseInt(e.target.value) || 1;
+          const scaledRecipe = scaleRecipe(recipeData, newServings);
+          setRecipeData(scaledRecipe);
+        }}
+      />
+      {recipeData.isScaled && (
+        <span className="scale-indicator">
+          (scaled from {recipeData.scaledFrom} servings)
+        </span>
+      )}
+    </label>
+  </div>
     <div className="step recipe-details">
       <h2>{recipeData.name}</h2>
       
@@ -423,7 +450,7 @@ const handleRecipeSelect = async (recipe) => {
         <h3>Ingredients</h3>
         <ul className="ingredients-list detailed">
           {(() => {
-            const smartIngredients = convertRecipeToUserUnits(recipeData.ingredients, ingredients);
+            const smartIngredients = recipeData.ingredients.map(ing => convertToRecipeDisplay(ing, ingredients));
             return smartIngredients.map((ingredient, index) => (
               <li key={index} className="ingredient-item">
                 <span className="ingredient-quantity">

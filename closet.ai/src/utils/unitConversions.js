@@ -367,3 +367,224 @@ export const getAllConversionsForIngredient = (quantity, unit, ingredientName) =
   
   return conversions;
 };
+
+// Preferred display units for different ingredient types in recipes
+export const getPreferredRecipeUnit = (ingredientName, currentUnit) => {
+  const normalizedName = ingredientName.toLowerCase();
+  const currentType = getUnitType(currentUnit);
+  
+  // Define preferred recipe units for common ingredients
+  const preferredUnits = {
+    // Grains - prefer volume in recipes
+    'rice': 'cup',
+    'white rice': 'cup',
+    'brown rice': 'cup',
+    'flour': 'cup',
+    'all purpose flour': 'cup',
+    'wheat flour': 'cup',
+    'bread flour': 'cup',
+    'oats': 'cup',
+    'quinoa': 'cup',
+    'pasta': 'cup',
+    
+    // Sugar - prefer volume in recipes
+    'sugar': 'cup',
+    'brown sugar': 'cup',
+    
+    // Liquids - keep as volume
+    'milk': 'cup',
+    'water': 'cup',
+    'oil': 'cup',
+    'olive oil': 'tablespoon',
+    'vegetable oil': 'tablespoon',
+    
+    // Butter - prefer weight or volume depending on current
+    'butter': currentType === 'weight' ? 'oz' : 'cup',
+    
+    // Beans and legumes - prefer volume
+    'beans': 'cup',
+    'black beans': 'cup',
+    'kidney beans': 'cup',
+    'lentils': 'cup',
+    'chickpeas': 'cup',
+    
+    // Nuts - prefer volume for small amounts
+    'almonds': 'cup',
+    'walnuts': 'cup',
+    'pecans': 'cup',
+    'peanuts': 'cup',
+    
+    // Vegetables - prefer volume for chopped
+    'onions': 'cup',
+    'onion': 'cup',
+    'carrots': 'cup',
+    'carrot': 'cup',
+    'celery': 'cup',
+    'tomatoes': 'cup',
+    'tomato': 'cup',
+    'potatoes': 'cup',
+    'potato': 'cup',
+    
+    // Cheese - prefer volume for grated
+    'cheese': 'cup',
+    'cheddar cheese': 'cup',
+    'mozzarella cheese': 'cup',
+    'parmesan cheese': 'cup'
+  };
+  
+  // Check if we have a preferred unit for this ingredient
+  const preferred = preferredUnits[normalizedName];
+  if (preferred) {
+    return preferred;
+  }
+  
+  // Default preferences based on current unit type
+  if (currentType === 'weight') {
+    // For weight units, prefer ounces for small amounts, pounds for large
+    return 'oz';
+  } else if (currentType === 'volume') {
+    // For volume units, prefer cups
+    return 'cup';
+  }
+  
+  // Return current unit if no preference found
+  return currentUnit;
+};
+
+// Convert ingredient to preferred recipe display unit
+export const convertToRecipeDisplay = (ingredient, userIngredients) => {
+  const userIngredient = userIngredients.find(userIng => 
+    userIng.name.toLowerCase() === ingredient.name.toLowerCase()
+  );
+  
+  if (!userIngredient) {
+    // User doesn't have this ingredient, return as-is
+    return {
+      ...ingredient,
+      displayQuantity: ingredient.quantity,
+      displayUnit: ingredient.unit,
+      isConverted: false,
+      hasConversion: false,
+      originalQuantity: ingredient.quantity,
+      originalUnit: ingredient.unit
+    };
+  }
+  
+  // Get preferred recipe display unit
+  const preferredUnit = getPreferredRecipeUnit(ingredient.name, userIngredient.unit);
+  
+  // If the ingredient is already in preferred unit, no conversion needed
+  if (ingredient.unit === preferredUnit) {
+    return {
+      ...ingredient,
+      displayQuantity: ingredient.quantity,
+      displayUnit: ingredient.unit,
+      isConverted: false,
+      hasConversion: true,
+      originalQuantity: ingredient.quantity,
+      originalUnit: ingredient.unit,
+      userHasAmount: userIngredient.quantity,
+      userUnit: userIngredient.unit
+    };
+  }
+  
+  // Try to convert to preferred unit for display
+  const convertedToPreferred = convertUnits(
+    ingredient.quantity,
+    ingredient.unit,
+    preferredUnit,
+    ingredient.name
+  );
+  
+  if (convertedToPreferred !== null) {
+    return {
+      ...ingredient,
+      displayQuantity: formatConvertedQuantity(convertedToPreferred),
+      displayUnit: preferredUnit,
+      isConverted: true,
+      hasConversion: true,
+      originalQuantity: ingredient.quantity,
+      originalUnit: ingredient.unit,
+      userHasAmount: userIngredient.quantity,
+      userUnit: userIngredient.unit,
+      recipeDisplayConversion: true
+    };
+  }
+  
+  // If conversion to preferred unit fails, try converting to user's unit
+  const convertedToUser = convertUnits(
+    ingredient.quantity,
+    ingredient.unit,
+    userIngredient.unit,
+    ingredient.name
+  );
+  
+  if (convertedToUser !== null) {
+    return {
+      ...ingredient,
+      displayQuantity: formatConvertedQuantity(convertedToUser),
+      displayUnit: userIngredient.unit,
+      isConverted: true,
+      hasConversion: true,
+      originalQuantity: ingredient.quantity,
+      originalUnit: ingredient.unit,
+      userHasAmount: userIngredient.quantity,
+      userUnit: userIngredient.unit
+    };
+  }
+  
+  // No conversion possible
+  return {
+    ...ingredient,
+    displayQuantity: ingredient.quantity,
+    displayUnit: ingredient.unit,
+    isConverted: false,
+    hasConversion: true,
+    originalQuantity: ingredient.quantity,
+    originalUnit: ingredient.unit,
+    userHasAmount: userIngredient.quantity,
+    userUnit: userIngredient.unit
+  };
+};
+
+// Scale recipe ingredients and instructions based on serving size
+export const scaleRecipe = (recipe, newServings) => {
+  const originalServings = recipe.servings || 4;
+  const scaleFactor = newServings / originalServings;
+  
+  // Scale ingredients
+  const scaledIngredients = recipe.ingredients.map(ingredient => ({
+    ...ingredient,
+    quantity: formatConvertedQuantity(ingredient.quantity * scaleFactor)
+  }));
+  
+  // Scale instruction durations (with some logic to prevent unrealistic times)
+  const scaledInstructions = recipe.instructions.map(instruction => {
+    let scaledDuration = instruction.duration;
+    
+    // Only scale prep-related durations, not cooking times
+    const prepKeywords = ['mix', 'chop', 'dice', 'combine', 'whisk', 'stir', 'blend'];
+    const isPrep = prepKeywords.some(keyword => 
+      instruction.instruction.toLowerCase().includes(keyword)
+    );
+    
+    if (isPrep && scaleFactor > 1) {
+      // Increase prep time for larger batches, but cap the increase
+      scaledDuration = Math.ceil(instruction.duration * Math.min(scaleFactor, 2));
+    }
+    
+    return {
+      ...instruction,
+      duration: scaledDuration
+    };
+  });
+  
+  return {
+    ...recipe,
+    servings: newServings,
+    ingredients: scaledIngredients,
+    instructions: scaledInstructions,
+    scaledFrom: originalServings,
+    isScaled: newServings !== originalServings
+  };
+};
