@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { geminiService } from '../services/gemini/gemini';
 import { saveRecipe, validateRecipeIngredients, subtractRecipeIngredients, addHistoryEntry } from '../services/firebase/firestore';
 import './geminiChat.css';
-import { convertUnits, formatConvertedQuantity, convertToRecipeDisplay } from '../utils/unitConversions';
+import { convertToRecipeDisplay } from '../utils/unitConversions';
 import ConversionIcon from './ConversionIcon';
 
 const STEPS = {
@@ -203,14 +203,14 @@ function GeminiChat({ ingredients = [], onIngredientsUpdated }) {
   };
 
   const handleCompleteRecipe = async () => {
-    if (!scaledRecipe) return;
+    if (!recipeData) return;
     
     setLoading(true);
     setError('');
     
     try {
-      // Subtract used ingredients from inventory using scaled amounts
-      await subtractRecipeIngredients(scaledRecipe.ingredients);
+      // Subtract used ingredients from inventory
+      await subtractRecipeIngredients(recipeData.ingredients);
       
       setShowCompletionConfirm(false);
       
@@ -413,28 +413,6 @@ function GeminiChat({ ingredients = [], onIngredientsUpdated }) {
 {/* Step 4: Recipe Details and Instructions */}
 {currentStep === STEPS.RECIPE_DETAILS && recipeData && (
   <div className="recipe-viewer-container">
-    <div className="serving-size-controls">
-    <label htmlFor="servings-input">
-      Adjust serving size: 
-      <input 
-        type="number" 
-        id="servings-input"
-        min="1" 
-        max="20" 
-        value={recipeData.servings} 
-        onChange={(e) => {
-          const newServings = parseInt(e.target.value) || 1;
-          const scaledRecipe = scaleRecipe(recipeData, newServings);
-          setRecipeData(scaledRecipe);
-        }}
-      />
-      {recipeData.isScaled && (
-        <span className="scale-indicator">
-          (scaled from {recipeData.scaledFrom} servings)
-        </span>
-      )}
-    </label>
-  </div>
     <div className="step recipe-details">
       <h2>{recipeData.name}</h2>
       

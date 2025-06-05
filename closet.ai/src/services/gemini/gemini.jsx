@@ -1,6 +1,7 @@
 import {
   GoogleGenAI,
 } from "@google/genai";
+import { convertUnits } from '../../utils/unitConversions';
 
 const API_KEY = "AIzaSyCJ6kuk5xH5XN1MWToXk7KKBDTIrB9_Xjk";
 const systemInstruction = `

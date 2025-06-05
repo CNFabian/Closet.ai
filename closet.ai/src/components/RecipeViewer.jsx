@@ -9,13 +9,12 @@ function RecipeViewer({ recipe, onBack, onIngredientsUpdated, ingredients = [] }
   const [showCompletionConfirm, setShowCompletionConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [scaledRecipe, setScaledRecipe] = useState(recipe);
 
   const goToNextInstruction = () => {
-    if (scaledRecipe && scaledRecipe.instructions && 
-        currentInstructionIndex < scaledRecipe.instructions.length - 1) {
+    if (recipe && recipe.instructions && 
+        currentInstructionIndex < recipe.instructions.length - 1) {
       setCurrentInstructionIndex(currentInstructionIndex + 1);
-    } else if (currentInstructionIndex === scaledRecipe.instructions.length - 1) {
+    } else if (currentInstructionIndex === recipe.instructions.length - 1) {
       // We're on the last step, show completion confirmation
       setShowCompletionConfirm(true);
     }
@@ -28,14 +27,14 @@ function RecipeViewer({ recipe, onBack, onIngredientsUpdated, ingredients = [] }
   };
 
   const handleCompleteRecipe = async () => {
-    if (!scaledRecipe) return;
+    if (!recipe) return;
     
     setLoading(true);
     setError('');
     
     try {
       // Subtract used ingredients from inventory using scaled amounts
-      await subtractRecipeIngredients(scaledRecipe.ingredients);
+      await subtractRecipeIngredients(recipe.ingredients);
       
       setShowCompletionConfirm(false);
       
@@ -61,62 +60,37 @@ function RecipeViewer({ recipe, onBack, onIngredientsUpdated, ingredients = [] }
   return (
     <div className="recipe-viewer-container">
       <div className="step recipe-details">
-        <h2>{scaledRecipe.name}</h2>
-        
-        {/* Serving Size Adjustment */}
-        <div className="serving-size-controls">
-          <label htmlFor="servings-input">
-            Adjust serving size: 
-            <input 
-              type="number" 
-              id="servings-input"
-              min="1" 
-              max="20" 
-              value={scaledRecipe.servings} 
-              onChange={(e) => {
-                const newServings = parseInt(e.target.value) || 1;
-                const newScaledRecipe = scaleRecipe(recipe, newServings);
-                setScaledRecipe(newScaledRecipe);
-              }}
-            />
-            {scaledRecipe.isScaled && (
-              <span className="scale-indicator">
-                (scaled from {scaledRecipe.scaledFrom} servings)
-              </span>
-            )}
-          </label>
-        </div>
-        
-        {scaledRecipe.adjustedFor && (
+        <h2>{recipe.name}</h2> 
+        {recipe.adjustedFor && (
           <div className="adjustment-notice">
-            <p><strong>Note:</strong> {scaledRecipe.adjustedFor}</p>
+            <p><strong>Note:</strong> {recipe.adjustedFor}</p>
           </div>
         )}
         
         <div className="recipe-overview">
-          <p className="recipe-description">{scaledRecipe.description}</p>
+          <p className="recipe-description">{recipe.description}</p>
           
           <div className="recipe-meta">
             <div className="meta-item">
-              <span className="meta-label">Prep Time:</span> {scaledRecipe.prepTime}
+              <span className="meta-label">Prep Time:</span> {recipe.prepTime}
             </div>
             <div className="meta-item">
-              <span className="meta-label">Cook Time:</span> {scaledRecipe.cookTime}
+              <span className="meta-label">Cook Time:</span> {recipe.cookTime}
             </div>
             <div className="meta-item">
-              <span className="meta-label">Total Time:</span> {scaledRecipe.totalTime}
+              <span className="meta-label">Total Time:</span> {recipe.totalTime}
             </div>
             <div className="meta-item">
-              <span className="meta-label">Servings:</span> {scaledRecipe.servings}
+              <span className="meta-label">Servings:</span> {recipe.servings}
             </div>
             <div className="meta-item">
-              <span className="meta-label">Difficulty:</span> {scaledRecipe.difficulty}
+              <span className="meta-label">Difficulty:</span> {recipe.difficulty}
             </div>
           </div>
           
-          {scaledRecipe.tags && scaledRecipe.tags.length > 0 && (
+          {recipe.tags && recipe.tags.length > 0 && (
             <div className="recipe-tags">
-              {scaledRecipe.tags.map((tag, index) => (
+              {recipe.tags.map((tag, index) => (
                 <span key={index} className="tag">{tag}</span>
               ))}
             </div>
@@ -125,7 +99,7 @@ function RecipeViewer({ recipe, onBack, onIngredientsUpdated, ingredients = [] }
           <h3>Ingredients</h3>
             <ul className="ingredients-list detailed">
               {(() => {
-                const smartIngredients = scaledRecipe.ingredients.map(ing => convertToRecipeDisplay(ing, ingredients));
+                const smartIngredients = recipe.ingredients.map(ing => convertToRecipeDisplay(ing, ingredients));
                 return smartIngredients.map((ingredient, index) => (
                   <li key={index} className="ingredient-item">
                     <span className="ingredient-quantity">
@@ -163,42 +137,42 @@ function RecipeViewer({ recipe, onBack, onIngredientsUpdated, ingredients = [] }
             <div className="instruction-card">
               <div className="instruction-header">
                 <span className="step-number">
-                  Step {scaledRecipe.instructions[currentInstructionIndex].stepNumber}
+                  Step {recipe.instructions[currentInstructionIndex].stepNumber}
                 </span>
                 <span className="step-duration">
-                  {scaledRecipe.instructions[currentInstructionIndex].duration} min
+                  {recipe.instructions[currentInstructionIndex].duration} min
                 </span>
               </div>
               
               <p className="instruction-text">
-                {scaledRecipe.instructions[currentInstructionIndex].instruction}
+                {recipe.instructions[currentInstructionIndex].instruction}
               </p>
               
-              {scaledRecipe.instructions[currentInstructionIndex].tip && (
+              {recipe.instructions[currentInstructionIndex].tip && (
                 <div className="instruction-tip">
-                  <span className="tip-label">Tip:</span> {scaledRecipe.instructions[currentInstructionIndex].tip}
+                  <span className="tip-label">Tip:</span> {recipe.instructions[currentInstructionIndex].tip}
                 </div>
               )}
               
               {/* Optional instruction meta - only show if present */}
-              {((scaledRecipe.instructions[currentInstructionIndex].ingredients && 
-                scaledRecipe.instructions[currentInstructionIndex].ingredients.length > 0) ||
-                (scaledRecipe.instructions[currentInstructionIndex].equipment && 
-                scaledRecipe.instructions[currentInstructionIndex].equipment.length > 0)) && (
+              {((recipe.instructions[currentInstructionIndex].ingredients && 
+                recipe.instructions[currentInstructionIndex].ingredients.length > 0) ||
+                (recipe.instructions[currentInstructionIndex].equipment && 
+                recipe.instructions[currentInstructionIndex].equipment.length > 0)) && (
                 <div className="instruction-meta">
-                  {scaledRecipe.instructions[currentInstructionIndex].ingredients && 
-                    scaledRecipe.instructions[currentInstructionIndex].ingredients.length > 0 && (
+                  {recipe.instructions[currentInstructionIndex].ingredients && 
+                    recipe.instructions[currentInstructionIndex].ingredients.length > 0 && (
                     <div className="instruction-ingredients">
                       <span className="meta-label">Ingredients: </span>
-                      <span className="meta-value">{scaledRecipe.instructions[currentInstructionIndex].ingredients.join(', ')}</span>
+                      <span className="meta-value">{recipe.instructions[currentInstructionIndex].ingredients.join(', ')}</span>
                     </div>
                   )}
                   
-                  {scaledRecipe.instructions[currentInstructionIndex].equipment && 
-                    scaledRecipe.instructions[currentInstructionIndex].equipment.length > 0 && (
+                  {recipe.instructions[currentInstructionIndex].equipment && 
+                    recipe.instructions[currentInstructionIndex].equipment.length > 0 && (
                     <div className="instruction-equipment">
                       <span className="meta-label">Equipment: </span>
-                      <span className="meta-value">{scaledRecipe.instructions[currentInstructionIndex].equipment.join(', ')}</span>
+                      <span className="meta-value">{recipe.instructions[currentInstructionIndex].equipment.join(', ')}</span>
                     </div>
                   )}
                 </div>
@@ -214,7 +188,7 @@ function RecipeViewer({ recipe, onBack, onIngredientsUpdated, ingredients = [] }
                 </button>
                 
                 <span className="step-indicator">
-                  {currentInstructionIndex + 1} of {scaledRecipe.instructions.length}
+                  {currentInstructionIndex + 1} of {recipe.instructions.length}
                 </span>
                 
                 <button 
@@ -222,7 +196,7 @@ function RecipeViewer({ recipe, onBack, onIngredientsUpdated, ingredients = [] }
                   disabled={false}
                   className="nav-button next"
                 >
-                  {currentInstructionIndex === scaledRecipe.instructions.length - 1 ? 'Complete Recipe' : 'Next'}
+                  {currentInstructionIndex === recipe.instructions.length - 1 ? 'Complete Recipe' : 'Next'}
                 </button>
               </div>
             </div>
@@ -246,7 +220,7 @@ function RecipeViewer({ recipe, onBack, onIngredientsUpdated, ingredients = [] }
             <div className="ingredients-used">
               <h4>Ingredients to be subtracted:</h4>
               <ul>
-                {scaledRecipe.ingredients.map((ing, idx) => (
+                {recipe.ingredients.map((ing, idx) => (
                   <li key={idx}>
                     {ing.quantity} {ing.unit} {ing.name}
                   </li>
