@@ -955,3 +955,212 @@ export const checkForDuplicateIngredient = async (ingredientName) => {
     throw error;
   }
 };
+
+// Notification functions
+export const addNotification = async (notificationData) => {
+  try {
+    const userId = getCurrentUserId();
+    
+    const docRef = await addDoc(collection(db, 'notifications'), {
+      ...notificationData,
+      userId: userId,
+      read: false,
+      createdAt: Timestamp.now()
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error adding notification:', error);
+    throw error;
+  }
+};
+
+export const getNotifications = async (limitTo = 20) => {
+  try {
+    const userId = getCurrentUserId();
+    
+    const querySnapshot = await getDocs(
+      query(
+        collection(db, 'notifications'),
+        where('userId', '==', userId),
+        orderBy('createdAt', 'desc'),
+        limit(limitTo)
+      )
+    );
+    
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting notifications:', error);
+    throw error;
+  }
+};
+
+export const markNotificationAsRead = async (notificationId) => {
+  try {
+    const userId = getCurrentUserId();
+    const docRef = doc(db, 'notifications', notificationId);
+    
+    // First check if the notification belongs to the current user
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists() || docSnap.data().userId !== userId) {
+      throw new Error('Notification not found or access denied');
+    }
+    
+    await updateDoc(docRef, {
+      read: true,
+      readAt: Timestamp.now()
+    });
+    return true;
+  } catch (error) {
+    console.error('Error marking notification as read:', error);
+    throw error;
+  }
+};
+
+export const markAllNotificationsAsRead = async () => {
+  try {
+    const userId = getCurrentUserId();
+    
+    const querySnapshot = await getDocs(
+      query(
+        collection(db, 'notifications'),
+        where('userId', '==', userId),
+        where('read', '==', false)
+      )
+    );
+    
+    const batch = writeBatch(db);
+    querySnapshot.docs.forEach(doc => {
+      batch.update(doc.ref, {
+        read: true,
+        readAt: Timestamp.now()
+      });
+    });
+    
+    if (querySnapshot.docs.length > 0) {
+      await batch.commit();
+    }
+    
+    return querySnapshot.docs.length;
+  } catch (error) {
+    console.error('Error marking all notifications as read:', error);
+    throw error;
+  }
+};
+
+export const cleanupOldNotifications = async () => {
+  try {
+    const userId = getCurrentUserId();
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    
+    const querySnapshot = await getDocs(
+      query(
+        collection(db, 'notifications'),
+        where('userId', '==', userId),
+        where('createdAt', '<=', Timestamp.fromDate(oneWeekAgo))
+      )
+    );
+    
+    const batch = writeBatch(db);
+    querySnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    if (querySnapshot.docs.length > 0) {
+      await batch.commit();
+      console.log(`Cleaned up ${querySnapshot.docs.length} old notifications`);
+    }
+    
+    return querySnapshot.docs.length;
+  } catch (error) {
+    console.error('Error cleaning up notifications:', error);
+    throw error;
+  }
+};
+
+export const checkExpiringIngredients = async () => {
+  try {
+    const userId = getCurrentUserId();
+    const today = new Date();
+    const threeDaysFromNow = new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000);
+    
+    // Get all active ingredients with expiration dates
+    const querySnapshot = await getDocs(
+      query(
+        collection(db, 'ingredients'),
+        where('userId', '==', userId),
+        where('inTrash', '!=', true)
+      )
+    );
+    
+    const expiringIngredients = [];
+    
+    querySnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      if (data.expirationDate) {
+        const expDate = data.expirationDate.toDate ? data.expirationDate.toDate() : new Date(data.expirationDate);
+        const daysUntilExpiration = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+        
+        if (daysUntilExpiration >= 0 && daysUntilExpiration <= 3) {
+          expiringIngredients.push({
+            id: doc.id,
+            ...data,
+            daysUntilExpiration,
+            expirationDate: expDate
+          });
+        }
+      }
+    });
+    
+    // Create notifications for expiring ingredients
+    for (const ingredient of expiringIngredients) {
+      let urgencyLevel = 'low';
+      let message = '';
+      
+      if (ingredient.daysUntilExpiration === 0) {
+        urgencyLevel = 'high';
+        message = `${ingredient.name} expires today!`;
+      } else if (ingredient.daysUntilExpiration === 1) {
+        urgencyLevel = 'high';
+        message = `${ingredient.name} expires tomorrow!`;
+      } else if (ingredient.daysUntilExpiration === 2) {
+        urgencyLevel = 'medium';
+        message = `${ingredient.name} expires in 2 days`;
+      } else if (ingredient.daysUntilExpiration === 3) {
+        urgencyLevel = 'low';
+        message = `${ingredient.name} expires in 3 days`;
+      }
+      
+      // Check if we already have a notification for this ingredient today
+      const existingNotifications = await getDocs(
+        query(
+          collection(db, 'notifications'),
+          where('userId', '==', userId),
+          where('type', '==', 'expiration_alert'),
+          where('ingredientId', '==', ingredient.id),
+          where('createdAt', '>=', Timestamp.fromDate(new Date(today.setHours(0, 0, 0, 0))))
+        )
+      );
+      
+      if (existingNotifications.docs.length === 0) {
+        await addNotification({
+          type: 'expiration_alert',
+          title: 'Ingredient Expiring Soon',
+          message: message,
+          urgencyLevel: urgencyLevel,
+          ingredientId: ingredient.id,
+          ingredientName: ingredient.name,
+          expirationDate: Timestamp.fromDate(ingredient.expirationDate),
+          daysUntilExpiration: ingredient.daysUntilExpiration
+        });
+      }
+    }
+    
+    return expiringIngredients;
+  } catch (error) {
+    console.error('Error checking expiring ingredients:', error);
+    throw error;
+  }
+};

@@ -10,12 +10,19 @@ import TestComponent from './pages/firestoreTest.jsx'
 import GeminiChat from './components/geminiChat.jsx'
 import SavedRecipes from './components/savedRecipes.jsx'
 import RecipeViewer from './components/RecipeViewer.jsx'
-import { getCollection, cleanupOldTrashItems, cleanupOldHistoryEntries } from './services/firebase/firestore'
+import { 
+  getCollection, 
+  cleanupOldTrashItems, 
+  cleanupOldHistoryEntries,
+  cleanupOldNotifications,
+  checkExpiringIngredients 
+} from './services/firebase/firestore'
 import { useAuth } from './context/AuthContext'
+import { auth } from './services/firebase/config'
 import ErrorBoundary from './components/ErrorBoundary'
 import History from './components/History.jsx'
-import './styles/base.css'      // Global utilities and base styles
-import './index.css'           // Tailwind and minimal overrides
+import './styles/base.css'
+import './index.css'
 
 function MainApp() {
   const { currentUser, isAuthenticated } = useAuth()
@@ -56,20 +63,45 @@ function MainApp() {
   }, [currentUser]);
 
   useEffect(() => {
-  if (currentUser) {
-    const cleanupOldData = async () => {
-      try {
-        await cleanupOldTrashItems();
-        await cleanupOldHistoryEntries();
-      } catch (error) {
-        console.error('Error with automatic cleanup:', error);
-      }
-    };
-    
-    // Cleanup only on mount (when user logs in)
-    cleanupOldData();
-  }
-}, [currentUser]);
+    if (currentUser) {
+      const cleanupOldData = async () => {
+        try {
+          // Only run cleanup functions if user is still authenticated
+          if (auth.currentUser) {
+            await cleanupOldTrashItems();
+            await cleanupOldHistoryEntries();
+            await cleanupOldNotifications();
+            
+            // Check for expiring ingredients and create notifications
+            await checkExpiringIngredients();
+          }
+        } catch (error) {
+          // Only log error if user is still authenticated (not a logout scenario)
+          if (auth.currentUser) {
+            console.error('Error with automatic cleanup:', error);
+          }
+        }
+      };
+      
+      // Cleanup only on mount (when user logs in)
+      cleanupOldData();
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (currentUser) {
+      // Check for expiring ingredients every hour
+      const expirationInterval = setInterval(async () => {
+        try {
+          await checkExpiringIngredients();
+        } catch (error) {
+          console.error('Error with periodic expiration check:', error);
+        }
+      }, 60 * 60 * 1000); // Every hour
+      
+      return () => clearInterval(expirationInterval);
+    }
+  }, [currentUser]);
   
   const fetchUserIngredients = async () => {
     if (!currentUser) return;

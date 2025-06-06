@@ -1,0 +1,356 @@
+/* Notification Bell Styles */
+.notification-bell-container {
+  position: relative;
+}
+
+.notification-bell-trigger {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.notification-bell-trigger:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+/* SVG bell icon styles */
+.bell-icon {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+/* Emoji bell styles (if using emoji option) */
+.bell-emoji {
+  font-size: 20px;
+  line-height: 1;
+  display: block;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #dc3545;
+  color: white;
+  border-radius: 50%;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  border: 2px solid orange;
+}
+
+.notification-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  min-width: 320px;
+  max-width: 400px;
+  max-height: 500px;
+  z-index: 1000;
+  animation: slideDown 0.2s ease-out;
+  border: 1px solid #e9ecef;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.notification-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.mark-all-read {
+  background: none;
+  border: none;
+  color: orange;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.mark-all-read:hover {
+  background-color: #fff8f0;
+}
+
+.notification-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.notification-loading {
+  padding: 20px;
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+}
+
+.no-notifications {
+  padding: 30px 20px;
+  text-align: center;
+  color: #6c757d;
+}
+
+.no-notifications p {
+  margin: 0;
+  font-style: italic;
+}
+
+.notification-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 20px;
+  border-bottom: 1px solid #f8f9fa;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  position: relative;
+}
+
+.notification-item:hover {
+  background-color: #f8f9fa;
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-item.unread {
+  background-color: #fff8f0;
+  border-left: 4px solid orange;
+}
+
+.notification-item.unread:hover {
+  background-color: #fff3e0;
+}
+
+/* Urgency level styling */
+.notification-item.notification-high {
+  border-left-color: #dc3545;
+}
+
+.notification-item.notification-high.unread {
+  background-color: #fff5f5;
+}
+
+.notification-item.notification-medium {
+  border-left-color: #ffc107;
+}
+
+.notification-item.notification-medium.unread {
+  background-color: #fffbf0;
+}
+
+.notification-icon {
+  font-size: 16px;
+  margin-right: 12px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.notification-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.notification-title {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.notification-message {
+  color: #495057;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.notification-time {
+  color: #6c757d;
+  font-size: 0.75rem;
+}
+
+.unread-indicator {
+  width: 8px;
+  height: 8px;
+  background-color: orange;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-left: 8px;
+  margin-top: 6px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .notification-dropdown {
+    min-width: 280px;
+    right: -10px;
+  }
+  
+  .notification-header {
+    padding: 12px 16px;
+  }
+  
+  .notification-item {
+    padding: 10px 16px;
+  }
+  
+  .bell-icon {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .bell-emoji {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .notification-dropdown {
+    min-width: calc(100vw - 40px);
+    max-width: calc(100vw - 40px);
+    right: -20px;
+  }
+  
+  .notification-bell-trigger {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .bell-icon {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .bell-emoji {
+    font-size: 16px;
+  }
+  
+  .notification-badge {
+    min-width: 16px;
+    height: 16px;
+    font-size: 9px;
+    top: -3px;
+    right: -3px;
+  }
+}
+
+/* Custom scrollbar for notification list */
+.notification-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notification-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.notification-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.notification-list::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Special effects for SVG and emoji */
+.notification-bell-trigger:active .bell-icon,
+.notification-bell-trigger:active .bell-emoji {
+  transform: scale(0.95);
+}
+
+.notification-bell-trigger:focus .bell-icon,
+.notification-bell-trigger:focus .bell-emoji {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Bell shake animation for notifications */
+.bell-icon.has-notifications,
+.bell-emoji.has-notifications {
+  animation: bellShake 0.5s ease-in-out;
+}
+
+@keyframes bellShake {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-10deg); }
+  75% { transform: rotate(10deg); }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .notification-bell-trigger {
+    border-width: 3px;
+    background: rgba(255, 255, 255, 0.3);
+  }
+  
+  .bell-icon,
+  .bell-emoji {
+    filter: contrast(2);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .bell-icon,
+  .bell-emoji,
+  .notification-bell-trigger,
+  .notification-dropdown {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* Hover effects for better visibility */
+.notification-bell-trigger:hover .bell-icon {
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.8));
+}
+
+.notification-bell-trigger:hover .bell-emoji {
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+}

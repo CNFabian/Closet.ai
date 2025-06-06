@@ -114,6 +114,25 @@
   animation: slideDown 0.2s ease-out;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* Responsive updates for header actions */
+@media (max-width: 768px) {
+  .header-actions {
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-actions {
+    gap: 8px;
+  }
+}
+
 @keyframes slideDown {
   from {
     opacity: 0;

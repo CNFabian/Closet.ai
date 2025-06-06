@@ -136,6 +136,76 @@
   outline-offset: 2px;
 }
 
+.expiration-countdown {
+  font-size: 11px;
+  color: #666;
+  font-weight: 600;
+  margin-top: 4px;
+  text-align: center;
+  padding: 3px 6px;
+  border-radius: 3px;
+  background-color: #f8f9fa;
+}
+
+.ingredient-card.expired .expiration-countdown {
+  color: white;
+  background-color: #dc3545;
+  font-weight: 700;
+}
+
+.ingredient-card.expiring-soon .expiration-countdown {
+  color: white;
+  background-color: #fd7e14;
+  font-weight: 700;
+}
+
+.chip-expiration-text {
+  font-size: 9px;
+  color: #666;
+  background-color: #f1f3f4;
+  padding: 2px 6px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ingredient-chip.expired .chip-expiration-text {
+  background-color: #dc3545;
+  color: white;
+}
+
+.ingredient-chip.expiring-soon .chip-expiration-text {
+  background-color: #fd7e14;
+  color: white;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .expiration-countdown {
+    font-size: 10px;
+    padding: 2px 5px;
+  }
+  
+  .chip-expiration-text {
+    font-size: 8px;
+    padding: 1px 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .expiration-countdown {
+    font-size: 9px;
+    padding: 2px 4px;
+  }
+  
+  .chip-expiration-text {
+    font-size: 7px;
+    padding: 1px 3px;
+  }
+}
+
 /* Responsive adjustments for toggle */
 @media (max-width: 480px) {
   .ingredient-form .toggle-label {

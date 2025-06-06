@@ -10,6 +10,35 @@ import {
   cleanupOldTrashItems 
 } from '../services/firebase/firestore'
 
+// Add these helper functions before the TestComponent function
+const getDaysUntilExpiration = (expirationDate) => {
+  if (!expirationDate) return null;
+  
+  const expDate = expirationDate.toDate ? expirationDate.toDate() : new Date(expirationDate);
+  const today = new Date();
+  const diffTime = expDate - today;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  return diffDays;
+};
+
+const getExpirationText = (expirationDate) => {
+  const daysUntil = getDaysUntilExpiration(expirationDate);
+  
+  if (daysUntil === null) return null;
+  
+  if (daysUntil < 0) {
+    const daysPast = Math.abs(daysUntil);
+    return `Expired ${daysPast} day${daysPast === 1 ? '' : 's'} ago`;
+  } else if (daysUntil === 0) {
+    return "Expires today";
+  } else if (daysUntil === 1) {
+    return "Expires tomorrow";
+  } else {
+    return `${daysUntil} days until expiration`;
+  }
+};
+
 const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
   const categories = [
     'Vegetables', 'Fruits', 'Meat', 'Dairy', 'Grains', 'Spices', 'Condiments', 
@@ -511,6 +540,7 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
       {cachedIngredients.map((ingredient) => {
         const expiring = ingredient.expirationDate && isExpiringSoon(ingredient.expirationDate.toDate ? ingredient.expirationDate.toDate() : ingredient.expirationDate);
         const expired = ingredient.expirationDate && isExpired(ingredient.expirationDate.toDate ? ingredient.expirationDate.toDate() : ingredient.expirationDate);
+        const expirationText = getExpirationText(ingredient.expirationDate);
         
         return (
           <div 
@@ -524,13 +554,11 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
             {ingredient.category && (
               <div className="ingredient-category">{ingredient.category}</div>
             )}
-            {ingredient.expirationDate && (
+            {expirationText && (
               <div className={`ingredient-expiration ${expired ? 'expired' : expiring ? 'expiring' : ''}`}>
-                Expires: {ingredient.expirationDate.toDate ? 
-                  ingredient.expirationDate.toDate().toLocaleDateString() : 
-                  new Date(ingredient.expirationDate).toLocaleDateString()}
-                {expired && <span className="status-text"> (EXPIRED)</span>}
-                {expiring && !expired && <span className="status-text"> (EXPIRES SOON)</span>}
+                <div className="expiration-countdown">
+                  {expirationText}
+                </div>
               </div>
             )}
             <button 
@@ -551,6 +579,7 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
       {cachedIngredients.map((ingredient) => {
         const expiring = ingredient.expirationDate && isExpiringSoon(ingredient.expirationDate.toDate ? ingredient.expirationDate.toDate() : ingredient.expirationDate);
         const expired = ingredient.expirationDate && isExpired(ingredient.expirationDate.toDate ? ingredient.expirationDate.toDate() : ingredient.expirationDate);
+        const expirationText = getExpirationText(ingredient.expirationDate);
         
         return (
           <div 
@@ -562,9 +591,9 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
             {ingredient.category && ingredient.category !== 'Other' && (
               <span className="chip-category">{ingredient.category}</span>
             )}
-            {(expired || expiring) && (
-              <span className="expiration-indicator">
-                {expired ? '⚠️' : '⏰'}
+            {expirationText && (
+              <span className="chip-expiration-text">
+                {expirationText}
               </span>
             )}
             <button 
@@ -590,6 +619,7 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
             {ingredients.map((ingredient) => {
               const expiring = ingredient.expirationDate && isExpiringSoon(ingredient.expirationDate.toDate ? ingredient.expirationDate.toDate() : ingredient.expirationDate);
               const expired = ingredient.expirationDate && isExpired(ingredient.expirationDate.toDate ? ingredient.expirationDate.toDate() : ingredient.expirationDate);
+              const expirationText = getExpirationText(ingredient.expirationDate);
               
               return (
                 <div 
@@ -598,9 +628,9 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
                 >
                   <span className="chip-name">{ingredient.name}</span>
                   <span className="chip-quantity">{ingredient.quantity} {ingredient.unit}</span>
-                  {(expired || expiring) && (
-                    <span className="expiration-indicator">
-                      {expired ? '⚠️' : '⏰'}
+                  {expirationText && (
+                    <span className="chip-expiration-text">
+                      {expirationText}
                     </span>
                   )}
                   <button 
@@ -619,7 +649,7 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
       ))}
     </div>
   );
-  
+
   return (
     <div className="box">
       <h1 className="title">Add Ingredients to Your Pantry</h1>
