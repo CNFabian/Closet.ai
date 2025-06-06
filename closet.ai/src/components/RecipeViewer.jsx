@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { subtractRecipeIngredients } from '../services/firebase/firestore';
 import './RecipeViewer.css';
 import { convertToRecipeDisplay, scaleRecipe  } from '../utils/unitConversions';
-import ConversionIcon from './ConversionIcon';
+import InlineConversionDropdown from './InlineConversionDropdown';
 
 function RecipeViewer({ recipe, onBack, onIngredientsUpdated, ingredients = [] }) {
   const [currentInstructionIndex, setCurrentInstructionIndex] = useState(0);
@@ -102,30 +102,17 @@ function RecipeViewer({ recipe, onBack, onIngredientsUpdated, ingredients = [] }
                 const smartIngredients = recipe.ingredients.map(ing => convertToRecipeDisplay(ing, ingredients));
                 return smartIngredients.map((ingredient, index) => (
                   <li key={index} className="ingredient-item">
-                    <span className="ingredient-quantity">
-                      {ingredient.displayQuantity} {ingredient.displayUnit}
-                      {ingredient.isConverted && (
-                        <span className="conversion-indicator" title={`Originally ${ingredient.originalQuantity} ${ingredient.originalUnit}`}>
-                          ✓
-                        </span>
-                      )}
-                    </span>
+                    <InlineConversionDropdown
+                      quantity={ingredient.displayQuantity}
+                      unit={ingredient.displayUnit}
+                      ingredientName={ingredient.name}
+                      originalQuantity={ingredient.originalQuantity}
+                      originalUnit={ingredient.originalUnit}
+                    />
                     {' '}
                     <span className="ingredient-name">{ingredient.name}</span>
                     {ingredient.preparation && (
                       <span className="ingredient-prep">, {ingredient.preparation}</span>
-                    )}
-                    {(ingredient.hasConversion || ingredient.isConverted) && (
-                      <ConversionIcon
-                        quantity={ingredient.displayQuantity}
-                        unit={ingredient.displayUnit}
-                        ingredientName={ingredient.name}
-                        isConverted={ingredient.isConverted}
-                        originalQuantity={ingredient.originalQuantity}
-                        originalUnit={ingredient.originalUnit}
-                        userHasAmount={ingredient.userHasAmount}
-                        userUnit={ingredient.isConverted ? ingredient.displayUnit : ingredient.userUnit}
-                      />
                     )}
                   </li>
                 ));

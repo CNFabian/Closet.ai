@@ -3,7 +3,6 @@ import { getSavedRecipes } from '../services/firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import './savedRecipes.css';
 import { convertRecipeToUserUnits, scaleRecipe } from '../utils/unitConversions';
-import ConversionIcon from './ConversionIcon';
 import { geminiService } from '../services/gemini/gemini';
 
 function SavedRecipes({ onSelectRecipe, ingredients = [] }) {

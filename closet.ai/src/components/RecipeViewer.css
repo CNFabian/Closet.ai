@@ -179,21 +179,23 @@
   border-radius: 8px;
   padding: 20px;
   border: 1px solid #e9ecef;
+  list-style: none; /* Remove list bullets since we're using flex */
 }
 
 .recipe-viewer-container .ingredient-item {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  text-align: center;
+  text-align: left; /* Override the center alignment */
   background-color: white;
   border: 1px solid #e9ecef;
   border-radius: 8px;
   padding: 12px;
   flex: 1 1 calc(33.333% - 8px);
-  min-width: 140px;
+  min-width: 200px; /* Increased to accommodate dropdown */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .recipe-viewer-container .ingredient-item:hover {
@@ -217,13 +219,14 @@
   font-weight: 600;
   color: #2c3e50;
   font-size: 0.95rem;
-  margin-bottom: 4px;
+  margin: 0;
 }
 
 .recipe-viewer-container .ingredient-prep {
   color: #6c757d;
   font-style: italic;
   font-size: 0.85rem;
+  margin: 0;
 }
 
 /* Instructions section */
@@ -543,17 +546,6 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
-}
-
-.conversion-indicator {
-  color: #28a745;
-  font-size: 12px;
-  margin-left: 4px;
-  font-weight: normal;
-}
-
-.ingredient-quantity {
-  position: relative;
 }
 
 /* Serving size controls */

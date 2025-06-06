@@ -3,7 +3,7 @@ import { geminiService } from '../services/gemini/gemini';
 import { saveRecipe, validateRecipeIngredients, subtractRecipeIngredients, addHistoryEntry } from '../services/firebase/firestore';
 import './geminiChat.css';
 import { convertToRecipeDisplay } from '../utils/unitConversions';
-import ConversionIcon from './ConversionIcon';
+import InlineConversionDropdown from './InlineConversionDropdown';
 
 const STEPS = {
   SELECT_MEAL_TYPE: 0,
@@ -451,41 +451,29 @@ function GeminiChat({ ingredients = [], onIngredientsUpdated }) {
           </div>
         )}
         
-        <h3>Ingredients</h3>
-        <ul className="ingredients-list detailed">
-          {(() => {
-            const smartIngredients = recipeData.ingredients.map(ing => convertToRecipeDisplay(ing, ingredients));
-            return smartIngredients.map((ingredient, index) => (
-              <li key={index} className="ingredient-item">
-                <span className="ingredient-quantity">
-                  {ingredient.displayQuantity} {ingredient.displayUnit}
-                  {ingredient.isConverted && (
-                    <span className="conversion-indicator" title={`Originally ${ingredient.originalQuantity} ${ingredient.originalUnit}`}>
-                      ✓
-                    </span>
-                  )}
-                </span>
-                {' '}
-                <span className="ingredient-name">{ingredient.name}</span>
-                {ingredient.preparation && (
-                  <span className="ingredient-prep">, {ingredient.preparation}</span>
-                )}
-                {(ingredient.hasConversion || ingredient.isConverted) && (
-                  <ConversionIcon
-                    quantity={ingredient.displayQuantity}
-                    unit={ingredient.displayUnit}
-                    ingredientName={ingredient.name}
-                    isConverted={ingredient.isConverted}
-                    originalQuantity={ingredient.originalQuantity}
-                    originalUnit={ingredient.originalUnit}
-                    userHasAmount={ingredient.userHasAmount}
-                    userUnit={ingredient.isConverted ? ingredient.displayUnit : ingredient.userUnit}
-                  />
-                )}
-              </li>
-            ));
-          })()}
-        </ul>
+       // Replace the ingredients list section in the recipe details view
+      <h3>Ingredients</h3>
+      <ul className="ingredients-list detailed">
+        {(() => {
+          const smartIngredients = recipeData.ingredients.map(ing => convertToRecipeDisplay(ing, ingredients));
+          return smartIngredients.map((ingredient, index) => (
+            <li key={index} className="ingredient-item">
+              <InlineConversionDropdown
+                quantity={ingredient.displayQuantity}
+                unit={ingredient.displayUnit}
+                ingredientName={ingredient.name}
+                originalQuantity={ingredient.originalQuantity}
+                originalUnit={ingredient.originalUnit}
+              />
+              {' '}
+              <span className="ingredient-name">{ingredient.name}</span>
+              {ingredient.preparation && (
+                <span className="ingredient-prep">, {ingredient.preparation}</span>
+              )}
+            </li>
+          ));
+        })()}
+      </ul>
         
         <h3>Instructions</h3>
         <div className="step-by-step-container">

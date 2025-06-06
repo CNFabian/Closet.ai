@@ -177,6 +177,20 @@
   margin-bottom: 8px;
   list-style-type: disc;
   margin-left: 20px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.ingredient-name {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.ingredient-prep {
+  color: #6c757d;
+  font-style: italic;
 }
 
 .ingredient-quantity {
@@ -558,13 +572,6 @@
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
   background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
-}
-
-.conversion-indicator {
-  color: #28a745;
-  font-size: 12px;
-  margin-left: 4px;
-  font-weight: normal;
 }
 
 .ingredient-quantity {

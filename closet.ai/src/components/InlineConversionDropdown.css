@@ -1,0 +1,60 @@
+.ingredient-quantity-with-conversion {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+
+.quantity-display {
+  font-weight: 700;
+  color: orange;
+  font-size: 1.1rem;
+}
+
+.unit-conversion-dropdown {
+  background: transparent;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.9rem;
+  color: #495057;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 60px;
+}
+
+.unit-conversion-dropdown:hover {
+  border-color: orange;
+  background-color: #fff8f0;
+}
+
+.unit-conversion-dropdown:focus {
+  outline: none;
+  border-color: orange;
+  box-shadow: 0 0 0 2px rgba(255, 165, 0, 0.2);
+  background-color: white;
+}
+
+.conversion-indicator {
+  color: #28a745;
+  font-size: 12px;
+  margin-left: 2px;
+  font-weight: normal;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) and (max-height: 900px) {
+  .ingredient-quantity-with-conversion {
+    gap: 4px;
+  }
+  
+  .quantity-display {
+    font-size: 1rem;
+  }
+  
+  .unit-conversion-dropdown {
+    font-size: 0.8rem;
+    padding: 1px 4px;
+    min-width: 50px;
+  }
+}
