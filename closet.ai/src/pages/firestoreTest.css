@@ -978,3 +978,192 @@
   border-radius: 4px;
   margin: 15px 0;
 }
+
+/* Fix for edit form modal layout issues */
+.edit-form {
+  color: black;
+  background: white;
+  border-radius: 8px;
+  padding: 25px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  /* Add these new properties */
+  position: relative;
+  z-index: 1001;
+  margin: 20px;
+}
+
+/* Ensure proper spacing for edit form groups */
+.edit-form .form-group {
+  margin-bottom: 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Fix toggle container in edit form */
+.edit-form .toggle-container {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  margin: 20px 0;
+  width: 100%;
+  box-sizing: border-box;
+  display: block;
+}
+
+/* Fix toggle label layout in edit form */
+.edit-form .toggle-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 15px;
+  color: #2c3e50;
+  font-weight: 600;
+  gap: 12px;
+  width: 100%;
+  flex-wrap: nowrap;
+}
+
+/* Ensure toggle switch is properly sized in edit form */
+.edit-form .toggle-switch {
+  position: relative;
+  width: 54px;
+  height: 28px;
+  background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+  border-radius: 14px;
+  border: 2px solid #ced4da;
+  transition: all 0.3s ease;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+  min-width: 54px;
+}
+
+/* Fix expiration date group in edit form */
+.edit-form .expiration-date-group {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  margin-top: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Ensure all inputs are properly sized in edit form */
+.edit-form .form-group input,
+.edit-form .form-group select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background-color: #fff;
+  box-sizing: border-box;
+  min-height: 44px;
+}
+
+/* Fix form row layout in edit form */
+.edit-form .form-row {
+  display: flex;
+  gap: 15px;
+  align-items: end;
+  width: 100%;
+}
+
+.edit-form .form-row .form-group {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Responsive fixes for edit form */
+@media (max-width: 768px) {
+  .edit-form {
+    padding: 20px;
+    margin: 10px;
+    max-width: calc(100vw - 20px);
+    width: calc(100vw - 20px);
+  }
+  
+  .edit-form .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+  
+  .edit-form .toggle-label {
+    font-size: 14px;
+    gap: 10px;
+  }
+  
+  .edit-form .toggle-switch {
+    width: 48px;
+    height: 26px;
+  }
+  
+  .edit-form .toggle-switch::before {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .edit-form .toggle-checkbox:checked + .toggle-switch::before {
+    transform: translateX(22px);
+  }
+}
+
+@media (max-width: 480px) {
+  .edit-form {
+    padding: 15px;
+    margin: 5px;
+    max-width: calc(100vw - 10px);
+    width: calc(100vw - 10px);
+  }
+  
+  .edit-form .form-group input,
+  .edit-form .form-group select {
+    padding: 10px 14px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
+/* Ensure overlay doesn't interfere with form */
+.edit-form-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+/* Fix for any potential text overflow */
+.edit-form label {
+  word-wrap: break-word;
+  white-space: normal;
+}
+
+/* Ensure proper z-index stacking */
+.edit-form-overlay {
+  z-index: 1000;
+}
+
+.edit-form {
+  z-index: 1001;
+}
+
+.save-prompt-overlay {
+  z-index: 1100;
+}
+
+.save-prompt {
+  z-index: 1101;
+}
