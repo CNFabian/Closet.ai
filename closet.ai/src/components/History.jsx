@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { getHistory, getHistoryByType, getHistoryByDateRange } from '../services/firebase/firestore';
+import { 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  writeBatch 
+} from 'firebase/firestore';
+import { db } from '../services/firebase/config';
+import { auth } from '../services/firebase/config';
 import { useAuth } from '../context/AuthContext';
 import './History.css';
 
@@ -22,6 +31,14 @@ function History() {
     recipe_saved: 'Recipes Saved',
     recipe_cooked: 'Recipes Cooked'
   };
+
+  const getCurrentUserId = () => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+  return user.uid;
+};
 
   useEffect(() => {
     if (currentUser) {
@@ -77,6 +94,47 @@ function History() {
   const clearDateFilter = () => {
     setDateRange({ start: '', end: '' });
     fetchHistory();
+  };
+
+  const handleClearAllHistory = async () => {
+    if (!confirm('Are you sure you want to delete ALL your activity history? This cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      setError('');
+      
+      const userId = getCurrentUserId();
+      
+      // Get all history entries for this user
+      const querySnapshot = await getDocs(
+        query(
+          collection(db, 'history'),
+          where('userId', '==', userId)
+        )
+      );
+      
+      // Delete all entries in batches
+      const batch = writeBatch(db);
+      querySnapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      
+      if (querySnapshot.docs.length > 0) {
+        await batch.commit();
+        setError(`Cleared all ${querySnapshot.docs.length} history entries`);
+        // Clear the history state to update the UI immediately
+        setHistory([]);
+      } else {
+        setError('No history entries to clear');
+      }
+    } catch (error) {
+      console.error('Error clearing all history:', error);
+      setError('Failed to clear history entries. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatDate = (timestamp) => {
@@ -147,29 +205,36 @@ function History() {
 
         <div className="filter-group">
           <label>Date range:</label>
-          <div className="date-range">
-            <input
-              type="date"
-              value={dateRange.start}
-              onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-              placeholder="Start date"
-            />
-            <span>to</span>
-            <input
-              type="date"
-              value={dateRange.end}
-              onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-              placeholder="End date"
-            />
-            <button onClick={fetchHistoryByDateRange} disabled={!dateRange.start || !dateRange.end}>
-              Filter
-            </button>
-            {(dateRange.start || dateRange.end) && (
-              <button onClick={clearDateFilter} className="clear-button">
-                Clear
+            <div className="date-range">
+              <input
+                type="date"
+                value={dateRange.start}
+                onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                placeholder="Start date"
+              />
+              <span>to</span>
+              <input
+                type="date"
+                value={dateRange.end}
+                onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                placeholder="End date"
+              />
+              <button onClick={fetchHistoryByDateRange} disabled={!dateRange.start || !dateRange.end}>
+                Filter
               </button>
-            )}
-          </div>
+              {(dateRange.start || dateRange.end) && (
+                <button onClick={clearDateFilter} className="clear-button">
+                  Clear
+                </button>
+              )}
+              <button 
+                onClick={handleClearAllHistory} 
+                disabled={loading}
+                className="cleanup-button"
+              >
+                Clear All History
+              </button>
+            </div>
         </div>
       </div>
 

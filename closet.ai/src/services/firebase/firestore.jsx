@@ -892,6 +892,37 @@ export const cleanupOldTrashItems = async () => {
   }
 };
 
+// Clean up old history entries (older than 7 days)
+export const cleanupOldHistoryEntries = async () => {
+  try {
+    const userId = getCurrentUserId();
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    
+    const querySnapshot = await getDocs(
+      query(
+        collection(db, 'history'),
+        where('userId', '==', userId),
+        where('timestamp', '<=', Timestamp.fromDate(sevenDaysAgo))
+      )
+    );
+    
+    const batch = writeBatch(db);
+    querySnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    if (querySnapshot.docs.length > 0) {
+      await batch.commit();
+      console.log(`Cleaned up ${querySnapshot.docs.length} old history entries`);
+    }
+    
+    return querySnapshot.docs.length;
+  } catch (error) {
+    console.error('Error cleaning up history entries:', error);
+    throw error;
+  }
+};
+
 export const checkForDuplicateIngredient = async (ingredientName) => {
   try {
     const userId = getCurrentUserId();

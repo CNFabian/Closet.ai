@@ -10,7 +10,7 @@ import TestComponent from './pages/firestoreTest.jsx'
 import GeminiChat from './components/geminiChat.jsx'
 import SavedRecipes from './components/savedRecipes.jsx'
 import RecipeViewer from './components/RecipeViewer.jsx'
-import { getCollection, cleanupOldTrashItems } from './services/firebase/firestore'
+import { getCollection, cleanupOldTrashItems, cleanupOldHistoryEntries } from './services/firebase/firestore'
 import { useAuth } from './context/AuthContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import History from './components/History.jsx'
@@ -54,6 +54,22 @@ function MainApp() {
       return () => clearInterval(interval);
     }
   }, [currentUser]);
+
+  useEffect(() => {
+  if (currentUser) {
+    const cleanupOldData = async () => {
+      try {
+        await cleanupOldTrashItems();
+        await cleanupOldHistoryEntries();
+      } catch (error) {
+        console.error('Error with automatic cleanup:', error);
+      }
+    };
+    
+    // Cleanup only on mount (when user logs in)
+    cleanupOldData();
+  }
+}, [currentUser]);
   
   const fetchUserIngredients = async () => {
     if (!currentUser) return;
