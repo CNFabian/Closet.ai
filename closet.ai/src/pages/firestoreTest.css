@@ -32,7 +32,49 @@
   margin-bottom: 30px;
 }
 
-/* Enhanced toggle switch styling for better visibility */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #495057;
+  font-size: 14px;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background-color: #fff;
+  box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: orange;
+  box-shadow: 0 0 0 3px rgba(255, 165, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.form-row {
+  display: flex;
+  gap: 15px;
+  align-items: end;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+/* Enhanced toggle switch styling */
 .ingredient-form .toggle-container {
   background-color: #f8f9fa;
   padding: 15px;
@@ -98,7 +140,7 @@
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1), 0 0 0 2px rgba(255, 165, 0, 0.3), 0 2px 8px rgba(255, 165, 0, 0.2);
 }
 
-/* Add icon indicators for better visual feedback */
+/* Toggle icon indicators */
 .ingredient-form .toggle-switch::after {
   content: '✕';
   position: absolute;
@@ -119,7 +161,6 @@
   font-size: 12px;
 }
 
-/* Enhanced label text */
 .ingredient-form .toggle-label span:last-child {
   user-select: none;
   transition: color 0.3s ease;
@@ -130,146 +171,12 @@
   font-weight: 700;
 }
 
-/* Focus state for accessibility */
 .ingredient-form .toggle-checkbox:focus + .toggle-switch {
   outline: 2px solid orange;
   outline-offset: 2px;
 }
 
-.expiration-countdown {
-  font-size: 11px;
-  color: #666;
-  font-weight: 600;
-  margin-top: 4px;
-  text-align: center;
-  padding: 3px 6px;
-  border-radius: 3px;
-  background-color: #f8f9fa;
-}
-
-.ingredient-card.expired .expiration-countdown {
-  color: white;
-  background-color: #dc3545;
-  font-weight: 700;
-}
-
-.ingredient-card.expiring-soon .expiration-countdown {
-  color: white;
-  background-color: #fd7e14;
-  font-weight: 700;
-}
-
-.chip-expiration-text {
-  font-size: 9px;
-  color: #666;
-  background-color: #f1f3f4;
-  padding: 2px 6px;
-  border-radius: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.ingredient-chip.expired .chip-expiration-text {
-  background-color: #dc3545;
-  color: white;
-}
-
-.ingredient-chip.expiring-soon .chip-expiration-text {
-  background-color: #fd7e14;
-  color: white;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .expiration-countdown {
-    font-size: 10px;
-    padding: 2px 5px;
-  }
-  
-  .chip-expiration-text {
-    font-size: 8px;
-    padding: 1px 4px;
-  }
-}
-
-@media (max-width: 480px) {
-  .expiration-countdown {
-    font-size: 9px;
-    padding: 2px 4px;
-  }
-  
-  .chip-expiration-text {
-    font-size: 7px;
-    padding: 1px 3px;
-  }
-}
-
-/* Responsive adjustments for toggle */
-@media (max-width: 480px) {
-  .ingredient-form .toggle-label {
-    font-size: 14px;
-    gap: 10px;
-  }
-  
-  .ingredient-form .toggle-switch {
-    width: 48px;
-    height: 26px;
-  }
-  
-  .ingredient-form .toggle-switch::before {
-    width: 18px;
-    height: 18px;
-  }
-  
-  .ingredient-form .toggle-checkbox:checked + .toggle-switch::before {
-    transform: translateX(22px);
-  }
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #495057;
-  font-size: 14px;
-}
-
-.form-group input,
-.form-group select {
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #e1e5e9;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: all 0.3s ease;
-  background-color: #fff;
-  box-sizing: border-box;
-}
-
-.form-group input:focus,
-.form-group select:focus {
-  outline: none;
-  border-color: orange;
-  box-shadow: 0 0 0 3px rgba(255, 165, 0, 0.1);
-  transform: translateY(-1px);
-}
-
-.form-row {
-  display: flex;
-  gap: 15px;
-  align-items: end;
-}
-
-.form-row .form-group {
-  flex: 1;
-}
-
+/* Expiration date styling */
 .expiration-date-group {
   background-color: #f8f9fa;
   padding: 15px;
@@ -286,6 +193,7 @@
   font-style: italic;
 }
 
+/* Submit button */
 .submit-button {
   background: linear-gradient(135deg, orange 0%, #ff8a00 100%);
   color: white;
@@ -326,6 +234,18 @@
   transition: all 0.3s ease;
 }
 
+.message.success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.message.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
 /* Ingredients container */
 .cached-ingredients {
   background: white;
@@ -343,23 +263,132 @@
   font-weight: 600;
 }
 
-/* Display mode selector */
-.display-mode-selector {
+/* Button container styles */
+.pantry-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+/* Show/Hide Trash Button */
+.show-trash-button {
+  padding: 8px 16px;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.show-trash-button.show {
+  background-color: #6c757d;
+}
+
+.show-trash-button.hide {
+  background-color: #dc3545;
+}
+
+.show-trash-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.show-trash-button.show:hover:not(:disabled) {
+  background-color: #5a6268;
+}
+
+.show-trash-button.hide:hover:not(:disabled) {
+  background-color: #c82333;
+}
+
+.show-trash-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Clean Trash Button */
+.clean-trash-button {
+  padding: 8px 16px;
+  background-color: #ffc107;
+  color: #212529;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.clean-trash-button:hover:not(:disabled) {
+  background-color: #e0a800;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(255, 193, 7, 0.3);
+}
+
+.clean-trash-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  opacity: 0.6;
+}
+
+/* Trash Expired Items Button */
+.trash-expired-button {
+  padding: 8px 16px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+}
+
+.trash-expired-button:hover:not(:disabled) {
+  background-color: #c82333;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(220, 53, 69, 0.3);
+}
+
+.trash-expired-button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(220, 53, 69, 0.4);
+}
+
+.trash-expired-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  opacity: 0.6;
+}
+
+/* View selector styles */
+.view-selector-container {
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-left: auto;
 }
 
-.display-mode-selector label {
+.view-selector-label {
   font-size: 14px;
-  color: #6c757d;
+  color: #666;
   font-weight: 500;
 }
 
-.display-mode-selector select {
-  padding: 8px 12px;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
+.view-selector-dropdown {
+  padding: 5px 10px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
   font-size: 14px;
   background-color: white;
   cursor: pointer;
@@ -367,73 +396,155 @@
   min-width: 140px;
 }
 
-.display-mode-selector select:focus {
+.view-selector-dropdown:focus {
   outline: none;
   border-color: orange;
   box-shadow: 0 0 0 2px rgba(255, 165, 0, 0.2);
 }
 
-.display-mode-selector select:hover {
+.view-selector-dropdown:hover {
   border-color: #adb5bd;
 }
 
-/* Responsive design for form */
-@media (max-width: 768px) {
-  .box {
-    padding: 20px;
-    margin: 10px;
-  }
-  
-  .title {
-    font-size: 1.8rem;
-  }
-  
-  .ingredient-form {
-    padding: 20px;
-  }
-  
-  .form-row {
-    flex-direction: column;
-    gap: 0;
-  }
-  
-  .submit-button {
-    padding: 12px 24px;
-    font-size: 15px;
-  }
-  
-  .display-mode-selector {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 5px;
-  }
-  
-  .display-mode-selector select {
-    width: 100%;
-  }
+.view-selector-dropdown:disabled {
+  background-color: #f8f9fa;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
-@media (max-width: 480px) {
-  .box {
-    padding: 15px;
-    margin: 5px;
-  }
-  
-  .title {
-    font-size: 1.6rem;
-  }
-  
-  .ingredient-form {
-    padding: 15px;
-  }
-  
-  .form-group input,
-  .form-group select {
-    padding: 10px 14px;
-    font-size: 16px; /* Prevents zoom on iOS */
-  }
+/* Trash section styles */
+.trash-section {
+  margin-top: 20px;
 }
 
+.trash-section h3 {
+  color: #2c3e50;
+  margin-bottom: 15px;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.trash-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.trash-item {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.trash-item:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.trash-item-info {
+  flex: 1;
+}
+
+.trash-item-name {
+  font-weight: bold;
+  color: #2c3e50;
+  margin-bottom: 5px;
+}
+
+.trash-item-details {
+  font-size: 14px;
+  color: #6c757d;
+  margin-bottom: 3px;
+}
+
+.trash-item-date {
+  font-size: 12px;
+  color: #dc3545;
+  font-weight: 500;
+}
+
+.trash-item-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.trash-restore-button {
+  padding: 6px 12px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.trash-restore-button:hover:not(:disabled) {
+  background-color: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+}
+
+.trash-restore-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
+}
+
+.trash-delete-button {
+  padding: 6px 12px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.trash-delete-button:hover:not(:disabled) {
+  background-color: #c82333;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+}
+
+.trash-delete-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
+}
+
+.trash-loading {
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+  padding: 20px;
+}
+
+.trash-empty {
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+  padding: 30px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+/* Ingredient display styles */
 .ingredients-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -454,11 +565,22 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  padding-top: 35px;
 }
 
 .ingredient-card:hover {
   transform: translateY(-1px);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.ingredient-card.expired {
+  border-color: #dc3545;
+  background-color: #fff5f5;
+}
+
+.ingredient-card.expiring-soon {
+  border-color: #fd7e14;
+  background-color: #fff8f0;
 }
 
 .ingredient-name {
@@ -467,6 +589,7 @@
   color: #2c3e50;
   margin-bottom: 6px;
   line-height: 1.2;
+  padding-right: 60px;
 }
 
 .ingredient-quantity {
@@ -497,12 +620,30 @@
   text-align: center;
 }
 
-.ingredient-date {
-  font-size: 9px;
-  color: #999;
-  margin-top: 2px;
+.expiration-countdown {
+  font-size: 11px;
+  color: #666;
+  font-weight: 600;
+  margin-top: 4px;
+  text-align: center;
+  padding: 3px 6px;
+  border-radius: 3px;
+  background-color: #f8f9fa;
 }
 
+.ingredient-card.expired .expiration-countdown {
+  color: white;
+  background-color: #dc3545;
+  font-weight: 700;
+}
+
+.ingredient-card.expiring-soon .expiration-countdown {
+  color: white;
+  background-color: #fd7e14;
+  font-weight: 700;
+}
+
+/* Chips view */
 .ingredients-list-compact {
   display: flex;
   flex-wrap: wrap;
@@ -533,6 +674,16 @@
   border-color: orange;
 }
 
+.ingredient-chip.expired {
+  border-color: #dc3545;
+  background-color: #fff5f5;
+}
+
+.ingredient-chip.expiring-soon {
+  border-color: #fd7e14;
+  background-color: #fff8f0;
+}
+
 .ingredient-chip .chip-name {
   font-weight: 600;
   font-size: 13px;
@@ -555,30 +706,29 @@
   letter-spacing: 0.3px;
 }
 
-.ingredient-chip.expired {
-  border-color: #dc3545;
-  background-color: #fff5f5;
+.chip-expiration-text {
+  font-size: 9px;
+  color: #666;
+  background-color: #f1f3f4;
+  padding: 2px 6px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-.ingredient-chip.expiring-soon {
-  border-color: #fd7e14;
-  background-color: #fff8f0;
+.ingredient-chip.expired .chip-expiration-text {
+  background-color: #dc3545;
+  color: white;
 }
 
-.ingredient-chip .expiration-indicator {
-  font-size: 12px;
-  margin-left: auto;
+.ingredient-chip.expiring-soon .chip-expiration-text {
+  background-color: #fd7e14;
+  color: white;
 }
 
-.ingredient-chip.expired .expiration-indicator {
-  color: #dc3545;
-}
-
-.ingredient-chip.expiring-soon .expiration-indicator {
-  color: #fd7e14;
-}
-
-/* Category grouping layout */
+/* Category view */
 .ingredients-by-category {
   margin-top: 20px;
 }
@@ -604,52 +754,7 @@
   margin-left: 10px;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .ingredients-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 10px;
-  }
-  
-  .ingredient-card {
-    padding: 10px;
-    min-height: 100px;
-  }
-  
-  .ingredient-name {
-    font-size: 13px;
-  }
-  
-  .ingredient-chip {
-    padding: 6px 10px;
-    min-height: 32px;
-  }
-}
-
-@media (max-width: 480px) {
-  .ingredients-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 8px;
-  }
-  
-  .ingredients-list-compact {
-    padding: 10px;
-  }
-  
-  .ingredient-chip {
-    padding: 5px 8px;
-    min-height: 28px;
-  }
-  
-  .ingredient-chip .chip-name {
-    font-size: 12px;
-  }
-  
-  .ingredient-chip .chip-quantity {
-    font-size: 11px;
-  }
-}
-
+/* Edit buttons */
 .edit-ingredient-button {
   position: absolute;
   top: 8px;
@@ -661,10 +766,9 @@
   padding: 4px 8px;
   font-size: 11px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
   opacity: 0;
   transform: translateY(-2px);
-  transition: all 0.2s ease;
 }
 
 .ingredient-card:hover .edit-ingredient-button {
@@ -704,28 +808,35 @@
 
 /* Edit form overlay */
 .edit-form-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 10px;
+  box-sizing: border-box;
+  animation: fadeIn 0.2s ease-out;
 }
 
 .edit-form {
-    color: black;
-    background: white;
-    border-radius: 8px;
-    padding: 25px;
-    max-width: 500px;
-    width: 90%;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  color: black;
+  background: white;
+  border-radius: 8px;
+  padding: 25px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  position: relative;
+  z-index: 1001;
+  margin: 20px;
+  animation: slideIn 0.3s ease-out;
 }
 
 .edit-form h3 {
@@ -735,6 +846,83 @@
   text-align: center;
   border-bottom: 2px solid orange;
   padding-bottom: 10px;
+}
+
+.edit-form .form-group {
+  margin-bottom: 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.edit-form .toggle-container {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  margin: 20px 0;
+  width: 100%;
+  box-sizing: border-box;
+  display: block;
+}
+
+.edit-form .toggle-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 15px;
+  color: #2c3e50;
+  font-weight: 600;
+  gap: 12px;
+  width: 100%;
+  flex-wrap: nowrap;
+}
+
+.edit-form .toggle-switch {
+  position: relative;
+  width: 54px;
+  height: 28px;
+  background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+  border-radius: 14px;
+  border: 2px solid #ced4da;
+  transition: all 0.3s ease;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+  min-width: 54px;
+}
+
+.edit-form .expiration-date-group {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  margin-top: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.edit-form .form-group input,
+.edit-form .form-group select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background-color: #fff;
+  box-sizing: border-box;
+  min-height: 44px;
+}
+
+.edit-form .form-row {
+  display: flex;
+  gap: 15px;
+  align-items: end;
+  width: 100%;
+}
+
+.edit-form .form-row .form-group {
+  flex: 1;
+  min-width: 0;
 }
 
 .edit-form-buttons {
@@ -783,6 +971,16 @@
   cursor: not-allowed;
 }
 
+.edit-form.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.edit-form label {
+  word-wrap: break-word;
+  white-space: normal;
+}
+
 /* Save confirmation prompt */
 .save-prompt-overlay {
   position: fixed;
@@ -805,365 +1003,368 @@
   width: 90%;
   text-align: center;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  z-index: 1101;
 }
 
 .save-prompt h3 {
-  margin-top: 0;
-  margin-bottom: 15px;
-  color: #2c3e50;
-  font-size: 1.3rem;
+ margin-top: 0;
+ margin-bottom: 15px;
+ color: #2c3e50;
+ font-size: 1.3rem;
 }
 
 .save-prompt p {
-  color: #666;
-  margin-bottom: 25px;
-  line-height: 1.5;
+ color: #666;
+ margin-bottom: 25px;
+ line-height: 1.5;
 }
 
 .save-prompt-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
+ display: flex;
+ justify-content: center;
+ gap: 15px;
 }
 
 .save-prompt-buttons .discard-button {
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 10px 20px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s;
+ background-color: #dc3545;
+ color: white;
+ border: none;
+ border-radius: 4px;
+ padding: 10px 20px;
+ cursor: pointer;
+ font-size: 14px;
+ transition: background-color 0.2s;
 }
 
 .save-prompt-buttons .discard-button:hover {
-  background-color: #c82333;
+ background-color: #c82333;
 }
 
 .save-prompt-buttons .save-button {
-  background-color: #28a745;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 10px 20px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s;
+ background-color: #28a745;
+ color: white;
+ border: none;
+ border-radius: 4px;
+ padding: 10px 20px;
+ cursor: pointer;
+ font-size: 14px;
+ transition: background-color 0.2s;
 }
 
 .save-prompt-buttons .save-button:hover:not(:disabled) {
-  background-color: #218838;
+ background-color: #218838;
 }
 
 .save-prompt-buttons .save-button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
+ background-color: #ccc;
+ cursor: not-allowed;
 }
 
-/* Update ingredient card positioning for edit button */
-.ingredient-card {
-  position: relative;
-  padding-top: 35px; /* Make room for edit button */
-}
-
-/* Ensure ingredient cards have proper spacing */
-.ingredient-card .ingredient-name {
-  padding-right: 60px; /* Prevent text overlap with edit button */
-}
-
-/* Responsive adjustments for edit functionality */
-@media (max-width: 768px) {
-  .edit-form {
-    padding: 20px;
-    margin: 10px;
-  }
-  
-  .edit-form-buttons {
-    flex-direction: column;
-  }
-  
-  .edit-form-buttons .cancel-button,
-  .edit-form-buttons .save-button {
-    width: 100%;
-    margin-bottom: 10px;
-  }
-  
-  .save-prompt {
-    padding: 20px;
-    margin: 20px;
-  }
-  
-  .save-prompt-buttons {
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .save-prompt-buttons .discard-button,
-  .save-prompt-buttons .save-button {
-    width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .edit-ingredient-button {
-    position: static;
-    margin-top: 8px;
-    opacity: 1;
-    transform: none;
-    width: 100%;
-    font-size: 12px;
-    padding: 6px;
-  }
-  
-  .ingredient-card {
-    padding-top: 15px;
-  }
-  
-  .ingredient-card .ingredient-name {
-    padding-right: 0;
-  }
-}
-
-/* Loading state for forms */
-.edit-form.loading {
-  pointer-events: none;
-  opacity: 0.7;
-}
-
-/* Animation for edit form */
-.edit-form-overlay {
-  animation: fadeIn 0.2s ease-out;
-}
-
-.edit-form {
-  animation: slideIn 0.3s ease-out;
-}
-
+/* Animations */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+ from {
+   opacity: 0;
+ }
+ to {
+   opacity: 1;
+ }
 }
 
 @keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+ from {
+   opacity: 0;
+   transform: translateY(-20px);
+ }
+ to {
+   opacity: 1;
+   transform: translateY(0);
+ }
 }
 
-/* Success message styling */
-.message.success {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-  padding: 10px;
-  border-radius: 4px;
-  margin: 15px 0;
-}
-
-.message.error {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-  padding: 10px;
-  border-radius: 4px;
-  margin: 15px 0;
-}
-
-/* Fix for edit form modal layout issues */
-.edit-form {
-  color: black;
-  background: white;
-  border-radius: 8px;
-  padding: 25px;
-  max-width: 500px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  /* Add these new properties */
-  position: relative;
-  z-index: 1001;
-  margin: 20px;
-}
-
-/* Ensure proper spacing for edit form groups */
-.edit-form .form-group {
-  margin-bottom: 20px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* Fix toggle container in edit form */
-.edit-form .toggle-container {
-  background-color: #f8f9fa;
-  padding: 15px;
-  border-radius: 8px;
-  border: 1px solid #dee2e6;
-  margin: 20px 0;
-  width: 100%;
-  box-sizing: border-box;
-  display: block;
-}
-
-/* Fix toggle label layout in edit form */
-.edit-form .toggle-label {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  font-size: 15px;
-  color: #2c3e50;
-  font-weight: 600;
-  gap: 12px;
-  width: 100%;
-  flex-wrap: nowrap;
-}
-
-/* Ensure toggle switch is properly sized in edit form */
-.edit-form .toggle-switch {
-  position: relative;
-  width: 54px;
-  height: 28px;
-  background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
-  border-radius: 14px;
-  border: 2px solid #ced4da;
-  transition: all 0.3s ease;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-  flex-shrink: 0;
-  min-width: 54px;
-}
-
-/* Fix expiration date group in edit form */
-.edit-form .expiration-date-group {
-  background-color: #f8f9fa;
-  padding: 15px;
-  border-radius: 8px;
-  border: 1px solid #dee2e6;
-  margin-top: 10px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* Ensure all inputs are properly sized in edit form */
-.edit-form .form-group input,
-.edit-form .form-group select {
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #e1e5e9;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: all 0.3s ease;
-  background-color: #fff;
-  box-sizing: border-box;
-  min-height: 44px;
-}
-
-/* Fix form row layout in edit form */
-.edit-form .form-row {
-  display: flex;
-  gap: 15px;
-  align-items: end;
-  width: 100%;
-}
-
-.edit-form .form-row .form-group {
-  flex: 1;
-  min-width: 0;
-}
-
-/* Responsive fixes for edit form */
+/* Responsive Design */
 @media (max-width: 768px) {
-  .edit-form {
-    padding: 20px;
-    margin: 10px;
-    max-width: calc(100vw - 20px);
-    width: calc(100vw - 20px);
-  }
-  
-  .edit-form .form-row {
-    flex-direction: column;
-    gap: 0;
-  }
-  
-  .edit-form .toggle-label {
-    font-size: 14px;
-    gap: 10px;
-  }
-  
-  .edit-form .toggle-switch {
-    width: 48px;
-    height: 26px;
-  }
-  
-  .edit-form .toggle-switch::before {
-    width: 18px;
-    height: 18px;
-  }
-  
-  .edit-form .toggle-checkbox:checked + .toggle-switch::before {
-    transform: translateX(22px);
-  }
+ .box {
+   padding: 20px;
+   margin: 10px;
+ }
+ 
+ .title {
+   font-size: 1.8rem;
+ }
+ 
+ .ingredient-form {
+   padding: 20px;
+ }
+ 
+ .form-row {
+   flex-direction: column;
+   gap: 0;
+ }
+ 
+ .submit-button {
+   padding: 12px 24px;
+   font-size: 15px;
+ }
+ 
+ .pantry-controls {
+   flex-wrap: wrap;
+   gap: 8px;
+ }
+ 
+ .show-trash-button,
+ .clean-trash-button,
+ .trash-expired-button {
+   font-size: 13px;
+   padding: 7px 14px;
+ }
+ 
+ .view-selector-container {
+   margin-left: 0;
+   width: 100%;
+   justify-content: space-between;
+ }
+ 
+ .view-selector-dropdown {
+   font-size: 13px;
+   padding: 4px 8px;
+   flex: 1;
+   max-width: 200px;
+ }
+ 
+ .ingredients-grid {
+   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+   gap: 10px;
+ }
+ 
+ .ingredient-card {
+   padding: 10px;
+   min-height: 100px;
+ }
+ 
+ .ingredient-name {
+   font-size: 13px;
+ }
+ 
+ .ingredient-chip {
+   padding: 6px 10px;
+   min-height: 32px;
+ }
+ 
+ .expiration-countdown {
+   font-size: 10px;
+   padding: 2px 5px;
+ }
+ 
+ .chip-expiration-text {
+   font-size: 8px;
+   padding: 1px 4px;
+ }
+ 
+ .trash-item {
+   flex-direction: column;
+   align-items: flex-start;
+   gap: 15px;
+   padding: 12px;
+ }
+ 
+ .trash-item-actions {
+   width: 100%;
+   justify-content: flex-end;
+ }
+ 
+ .trash-restore-button,
+ .trash-delete-button {
+   flex: 1;
+   max-width: 100px;
+ }
+ 
+ .edit-form {
+   padding: 20px;
+   margin: 10px;
+   max-width: calc(100vw - 20px);
+   width: calc(100vw - 20px);
+ }
+ 
+ .edit-form .form-row {
+   flex-direction: column;
+   gap: 0;
+ }
+ 
+ .edit-form .toggle-label {
+   font-size: 14px;
+   gap: 10px;
+ }
+ 
+ .edit-form .toggle-switch {
+   width: 48px;
+   height: 26px;
+ }
+ 
+ .edit-form .toggle-switch::before {
+   width: 18px;
+   height: 18px;
+ }
+ 
+ .edit-form .toggle-checkbox:checked + .toggle-switch::before {
+   transform: translateX(22px);
+ }
+ 
+ .edit-form-buttons {
+   flex-direction: column;
+ }
+ 
+ .edit-form-buttons .cancel-button,
+ .edit-form-buttons .save-button {
+   width: 100%;
+   margin-bottom: 10px;
+ }
+ 
+ .save-prompt {
+   padding: 20px;
+   margin: 20px;
+ }
+ 
+ .save-prompt-buttons {
+   flex-direction: column;
+   gap: 10px;
+ }
+ 
+ .save-prompt-buttons .discard-button,
+ .save-prompt-buttons .save-button {
+   width: 100%;
+ }
+ 
+ .ingredient-form .toggle-label {
+   font-size: 14px;
+   gap: 10px;
+ }
+ 
+ .ingredient-form .toggle-switch {
+   width: 48px;
+   height: 26px;
+ }
+ 
+ .ingredient-form .toggle-switch::before {
+   width: 18px;
+   height: 18px;
+ }
+ 
+ .ingredient-form .toggle-checkbox:checked + .toggle-switch::before {
+   transform: translateX(22px);
+ }
 }
 
 @media (max-width: 480px) {
-  .edit-form {
-    padding: 15px;
-    margin: 5px;
-    max-width: calc(100vw - 10px);
-    width: calc(100vw - 10px);
-  }
-  
-  .edit-form .form-group input,
-  .edit-form .form-group select {
-    padding: 10px 14px;
-    font-size: 16px; /* Prevents zoom on iOS */
-  }
-}
-
-/* Ensure overlay doesn't interfere with form */
-.edit-form-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  padding: 10px;
-  box-sizing: border-box;
-}
-
-/* Fix for any potential text overflow */
-.edit-form label {
-  word-wrap: break-word;
-  white-space: normal;
-}
-
-/* Ensure proper z-index stacking */
-.edit-form-overlay {
-  z-index: 1000;
-}
-
-.edit-form {
-  z-index: 1001;
-}
-
-.save-prompt-overlay {
-  z-index: 1100;
-}
-
-.save-prompt {
-  z-index: 1101;
+ .box {
+   padding: 15px;
+   margin: 5px;
+ }
+ 
+ .title {
+   font-size: 1.6rem;
+ }
+ 
+ .ingredient-form {
+   padding: 15px;
+ }
+ 
+ .form-group input,
+ .form-group select {
+   padding: 10px 14px;
+   font-size: 16px; /* Prevents zoom on iOS */
+ }
+ 
+ .pantry-controls {
+   flex-direction: column;
+   align-items: stretch;
+   gap: 10px;
+ }
+ 
+ .show-trash-button,
+ .clean-trash-button,
+ .trash-expired-button {
+   font-size: 12px;
+   padding: 8px 12px;
+   width: 100%;
+ }
+ 
+ .view-selector-container {
+   justify-content: space-between;
+ }
+ 
+ .view-selector-dropdown {
+   max-width: none;
+ }
+ 
+ .ingredients-grid {
+   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+   gap: 8px;
+ }
+ 
+ .ingredients-list-compact {
+   padding: 10px;
+ }
+ 
+ .ingredient-chip {
+   padding: 5px 8px;
+   min-height: 28px;
+ }
+ 
+ .ingredient-chip .chip-name {
+   font-size: 12px;
+ }
+ 
+ .ingredient-chip .chip-quantity {
+   font-size: 11px;
+ }
+ 
+ .expiration-countdown {
+   font-size: 9px;
+   padding: 2px 4px;
+ }
+ 
+ .chip-expiration-text {
+   font-size: 7px;
+   padding: 1px 3px;
+ }
+ 
+ .trash-item-actions {
+   justify-content: stretch;
+ }
+ 
+ .trash-restore-button,
+ .trash-delete-button {
+   max-width: none;
+ }
+ 
+ .edit-ingredient-button {
+   position: static;
+   margin-top: 8px;
+   opacity: 1;
+   transform: none;
+   width: 100%;
+   font-size: 12px;
+   padding: 6px;
+ }
+ 
+ .ingredient-card {
+   padding-top: 15px;
+ }
+ 
+ .ingredient-card .ingredient-name {
+   padding-right: 0;
+ }
+ 
+ .edit-form {
+   padding: 15px;
+   margin: 5px;
+   max-width: calc(100vw - 10px);
+   width: calc(100vw - 10px);
+ }
+ 
+ .edit-form .form-group input,
+ .edit-form .form-group select {
+   padding: 10px 14px;
+   font-size: 16px; /* Prevents zoom on iOS */
+ }
 }

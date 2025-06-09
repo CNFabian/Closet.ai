@@ -7,10 +7,9 @@ import {
   restoreFromTrash, 
   permanentlyDeleteIngredient, 
   getTrashIngredients, 
-  cleanupOldTrashItems 
+  cleanupOldTrashItems
 } from '../services/firebase/firestore'
 
-// Add these helper functions before the TestComponent function
 const getDaysUntilExpiration = (expirationDate) => {
   if (!expirationDate) return null;
   
@@ -271,6 +270,42 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
     }
   };
 
+  const handleTrashExpiredItems = async () => {
+    const expiredItems = cachedIngredients.filter(ingredient => 
+      ingredient.expirationDate && isExpired(ingredient.expirationDate.toDate ? ingredient.expirationDate.toDate() : ingredient.expirationDate)
+    );
+
+    if (expiredItems.length === 0) {
+      setMessage('No expired items found');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to move ${expiredItems.length} expired item${expiredItems.length === 1 ? '' : 's'} to trash?`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Move each expired item to trash
+      for (const item of expiredItems) {
+        await moveToTrash(item.id);
+      }
+      
+      // Refresh ingredients
+      if (updateIngredients) {
+        await updateIngredients();
+      }
+      
+      setMessage(`Moved ${expiredItems.length} expired item${expiredItems.length === 1 ? '' : 's'} to trash`);
+    } catch (error) {
+      console.error('Error moving expired items to trash:', error);
+      setMessage('Error moving expired items to trash. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Edit functionality
   const startEditing = (ingredient) => {
     const expirationDate = ingredient.expirationDate ? 
@@ -403,6 +438,13 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
     const expDate = new Date(expirationDate);
     const today = new Date();
     return expDate < today;
+  };
+
+
+  const hasExpiredItems = (ingredients) => {
+    return ingredients.some(ingredient => 
+      ingredient.expirationDate && isExpired(ingredient.expirationDate.toDate ? ingredient.expirationDate.toDate() : ingredient.expirationDate)
+    );
   };
 
   const groupedIngredients = cachedIngredients.reduce((groups, ingredient) => {
@@ -759,126 +801,87 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
       
       {message && <p className="message">{message}</p>}
       
-      <div className="cached-ingredients">
-          {/* Trash toggle button */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h2>Your Pantry Inventory ({cachedIngredients.length} items):</h2>
-            
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <button 
-                onClick={() => setShowTrash(!showTrash)}
-                disabled={loading}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: showTrash ? '#dc3545' : '#6c757d',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
-              >
-                {showTrash ? 'Hide Trash' : 'Show Trash'}
-              </button>
-              
-              {showTrash && (
-                <button 
-                  onClick={handleCleanupTrash}
-                  disabled={loading}
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#ffc107',
-                    color: '#212529',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '14px'
-                  }}
-                >
-                  Clean Trash
-                </button>
-              )}
-              
-              <div className="display-mode-selector">
-                <label style={{ marginRight: '10px', fontSize: '14px', color: '#666' }}>View:</label>
-                <select 
-                  value={displayMode} 
-                  onChange={(e) => setDisplayMode(e.target.value)}
-                  disabled={editingId !== null}
-                  style={{ 
-                    padding: '5px 10px', 
-                    borderRadius: '4px', 
-                    border: '1px solid #ddd',
-                    fontSize: '14px'
-                  }}
-                >
-                  <option value="grid">Grid View</option>
-                  <option value="chips">Compact Chips</option>
-                  <option value="category">By Category</option>
-                </select>
-              </div>
-            </div>
-          </div>
+     <div className="cached-ingredients">
+      {/* Trash toggle button */}
+      <div className="pantry-controls">
+        <button 
+          onClick={() => setShowTrash(!showTrash)}
+          disabled={loading}
+          className={`show-trash-button ${showTrash ? 'hide' : 'show'}`}
+        >
+          {showTrash ? 'Hide Trash' : 'Show Trash'}
+        </button>
+        
+        {/* Conditionally show Trash Expired Items button */}
+        {!showTrash && hasExpiredItems(cachedIngredients) && (
+          <button 
+            onClick={handleTrashExpiredItems}
+            disabled={loading}
+            className="trash-expired-button"
+          >
+            Trash Expired Items
+          </button>
+        )}
+        
+        {showTrash && (
+          <button 
+            onClick={handleCleanupTrash}
+            disabled={loading}
+            className="clean-trash-button"
+          >
+            Clean Trash
+          </button>
+        )}
+        
+        <div className="view-selector-container">
+          <label className="view-selector-label">View:</label>
+          <select 
+            value={displayMode} 
+            onChange={(e) => setDisplayMode(e.target.value)}
+            disabled={editingId !== null}
+            className="view-selector-dropdown"
+          >
+            <option value="grid">Grid View</option>
+            <option value="chips">Compact Chips</option>
+            <option value="category">By Category</option>
+          </select>
+        </div>
+      </div>
 
           {/* Conditional rendering for active ingredients or trash */}
           {showTrash ? (
             <div className="trash-section">
               <h3>Trash ({trashIngredients.length} items)</h3>
               {loadingTrash ? (
-                <p>Loading trash items...</p>
+                <p className="trash-loading">Loading trash items...</p>
               ) : trashIngredients.length > 0 ? (
                 <div className="trash-items">
                   {trashIngredients.map((ingredient) => (
-                    <div key={ingredient.id} className="trash-item" style={{
-                      background: '#f8f9fa',
-                      border: '1px solid #dee2e6',
-                      borderRadius: '8px',
-                      padding: '15px',
-                      margin: '10px 0',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}>
-                      <div>
-                        <strong>{ingredient.name}</strong>
-                        <div style={{ fontSize: '14px', color: '#6c757d' }}>
+                    <div key={ingredient.id} className="trash-item">
+                      <div className="trash-item-info">
+                        <div className="trash-item-name">{ingredient.name}</div>
+                        <div className="trash-item-details">
                           {ingredient.quantity} {ingredient.unit} • {ingredient.category}
                         </div>
-                        <div style={{ fontSize: '12px', color: '#dc3545' }}>
+                        <div className="trash-item-date">
                           Trashed: {ingredient.trashedAt?.toDate ? 
                             ingredient.trashedAt.toDate().toLocaleString() : 
                             new Date(ingredient.trashedAt).toLocaleString()
                           }
                         </div>
                       </div>
-                      <div style={{ display: 'flex', gap: '10px' }}>
+                      <div className="trash-item-actions">
                         <button
                           onClick={() => handleRestoreFromTrash(ingredient.id)}
                           disabled={loading}
-                          style={{
-                            padding: '6px 12px',
-                            backgroundColor: '#28a745',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '12px'
-                          }}
+                          className="trash-restore-button"
                         >
                           Restore
                         </button>
                         <button
                           onClick={() => handlePermanentDelete(ingredient.id)}
                           disabled={loading}
-                          style={{
-                            padding: '6px 12px',
-                            backgroundColor: '#dc3545',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '12px'
-                          }}
+                          className="trash-delete-button"
                         >
                           Delete
                         </button>
@@ -887,7 +890,7 @@ const TestComponent = ({ cachedIngredients = [], updateIngredients }) => {
                   ))}
                 </div>
               ) : (
-                <p style={{ textAlign: 'center', color: '#6c757d', fontStyle: 'italic' }}>
+                <p className="trash-empty">
                   No items in trash
                 </p>
               )}
