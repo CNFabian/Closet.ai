@@ -299,6 +299,49 @@ button:focus-visible {
   color: white;
 }
 
+/* Responsive navigation tabs for mobile */
+@media (max-width: 768px) {
+  .nav-tabs {
+    gap: 5px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+  }
+  
+  .tab {
+    padding: 8px 12px;
+    font-size: 12px;
+    border-radius: 3px;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .nav-tabs {
+    gap: 3px;
+    margin-bottom: 10px;
+  }
+  
+  .tab {
+    padding: 6px 8px;
+    font-size: 11px;
+    border-radius: 2px;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+@media (max-width: 320px) {
+  .tab {
+    padding: 5px 4px;
+    font-size: 10px;
+  }
+}
+
 /* Layout Utilities */
 .text-center {
   text-align: center;
