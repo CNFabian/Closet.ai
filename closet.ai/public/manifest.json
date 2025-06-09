@@ -8,6 +8,7 @@
   "theme_color": "#ff8a00",
   "orientation": "portrait-primary",
   "scope": "/",
+  "viewport": "width=device-width, initial-scale=1.0, user-scalable=no",
   "icons": [
     {
       "src": "/icon-192.png",
