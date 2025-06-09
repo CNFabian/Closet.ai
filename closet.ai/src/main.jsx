@@ -152,25 +152,29 @@ function MainApp() {
           className={`tab ${activeView === 'ingredients' ? 'active' : ''}`}
           onClick={() => setActiveView('ingredients')}
         >
-          My Ingredients
+          <span className="tab-icon">🥬</span>
+          <span className="tab-text">Pantry</span>
         </button>
         <button 
           className={`tab ${activeView === 'recipes' ? 'active' : ''}`}
           onClick={() => setActiveView('recipes')}
         >
-          Generate Recipes
+          <span className="tab-icon">🤖</span>
+          <span className="tab-text">Generate</span>
         </button>
         <button 
           className={`tab ${activeView === 'savedRecipes' ? 'active' : ''}`}
           onClick={() => setActiveView('savedRecipes')}
         >
-          Saved Recipes
+          <span className="tab-icon">💾</span>
+          <span className="tab-text">Saved</span>
         </button>
         <button 
           className={`tab ${activeView === 'history' ? 'active' : ''}`}
           onClick={() => setActiveView('history')}
         >
-          Activity History
+          <span className="tab-icon">📝</span>
+          <span className="tab-text">History</span>
         </button>
       </div>
 
