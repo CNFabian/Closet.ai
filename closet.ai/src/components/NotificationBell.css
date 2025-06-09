@@ -16,6 +16,7 @@
   justify-content: center;
   transition: all 0.3s ease;
   position: relative;
+  padding: 0; /* Remove any default padding */
 }
 
 .notification-bell-trigger:hover {
@@ -31,6 +32,8 @@
   stroke-width: 2;
   fill: currentColor;
   stroke: currentColor;
+  display: block; /* Ensure it's treated as a block element */
+  margin: 0; /* Remove any default margins */
 }
 
 /* Emoji bell styles (if using emoji option) */
@@ -38,6 +41,8 @@
   font-size: 20px;
   line-height: 1;
   display: block;
+  margin: 0; /* Remove any default margins */
+  text-align: center;
 }
 
 .notification-badge {
@@ -258,6 +263,7 @@
   .notification-bell-trigger {
     width: 36px;
     height: 36px;
+    padding: 0; /* Ensure no padding on mobile */
   }
   
   .bell-icon {
