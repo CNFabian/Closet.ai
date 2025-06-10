@@ -122,7 +122,9 @@ export const geminiService = {
         - Use realistic quantities that don't exceed what's in my pantry
         
         YOU MUST RESPOND WITH VALID JSON ONLY, with no text before or after. Do not include markdown code blocks.
-        
+
+        IMPORTANT: The recipe "name" field should be EXACTLY the recipe name without any serving size information. Do not include serving counts, portion information, or any text like "(serves X)" in the recipe name.
+
         The JSON must follow this exact structure:
         {
           "recipe": {
