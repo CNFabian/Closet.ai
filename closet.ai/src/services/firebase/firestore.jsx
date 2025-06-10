@@ -342,10 +342,21 @@ export const subtractRecipeIngredients = async (usedIngredients) => {
         });
         
         const docRef = doc(db, 'ingredients', currentIngredient.id);
-        batch.update(docRef, {
-          quantity: newQuantity,
-          updatedAt: Timestamp.now()
-        });
+        
+        // If quantity reaches 0, move to trash automatically
+        if (newQuantity <= 0) {
+          batch.update(docRef, {
+            quantity: newQuantity,
+            inTrash: true,
+            trashedAt: Timestamp.now(),
+            updatedAt: Timestamp.now()
+          });
+        } else {
+          batch.update(docRef, {
+            quantity: newQuantity,
+            updatedAt: Timestamp.now()
+          });
+        }
       } else {
         console.warn(`Ingredient "${usedIngredient.name}" not found in pantry`);
       }
@@ -360,15 +371,25 @@ export const subtractRecipeIngredients = async (usedIngredients) => {
         result.conversion
       ).join(', ');
 
+      const trashedItems = conversionResults.filter(result => result.newQuantity <= 0);
+      let description = `Used ingredients for cooking: ${usedIngredientsList}`;
+      
+      if (trashedItems.length > 0) {
+        const trashedNames = trashedItems.map(item => item.name).join(', ');
+        description += `. Moved ${trashedItems.length} item${trashedItems.length === 1 ? '' : 's'} to trash: ${trashedNames}`;
+      }
+
       await addHistoryEntry({
         type: 'recipe_cooked',
         action: 'Cooked recipe',
         details: {
           ingredientsUsed: usedIngredients,
           conversionResults: conversionResults,
-          totalIngredients: usedIngredients.length
+          totalIngredients: usedIngredients.length,
+          itemsMovedToTrash: trashedItems.length,
+          trashedItems: trashedItems.map(item => item.name)
         },
-        description: `Used ingredients for cooking: ${usedIngredientsList}`
+        description: description
       });
     } catch (historyError) {
       console.error('Error adding history entry:', historyError);
