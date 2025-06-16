@@ -16,7 +16,7 @@
   justify-content: center;
   transition: all 0.3s ease;
   position: relative;
-  padding: 0; /* Remove any default padding */
+  padding: 0;
 }
 
 .notification-bell-trigger:hover {
@@ -25,23 +25,21 @@
   transform: translateY(-1px);
 }
 
-/* SVG bell icon styles */
 .bell-icon {
   width: 20px;
   height: 20px;
   stroke-width: 2;
   fill: currentColor;
   stroke: currentColor;
-  display: block; /* Ensure it's treated as a block element */
-  margin: 0; /* Remove any default margins */
+  display: block;
+  margin: 0;
 }
 
-/* Emoji bell styles (if using emoji option) */
 .bell-emoji {
   font-size: 20px;
   line-height: 1;
   display: block;
-  margin: 0; /* Remove any default margins */
+  margin: 0;
   text-align: center;
 }
 
@@ -72,7 +70,6 @@
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
   min-width: 320px;
   max-width: 400px;
-  max-height: 500px;
   z-index: 1000;
   animation: slideDown 0.2s ease-out;
   border: 1px solid #e9ecef;
@@ -125,22 +122,15 @@
   overflow-y: auto;
 }
 
-.notification-loading {
+.notification-loading, .no-notifications {
   padding: 20px;
   text-align: center;
   color: #6c757d;
   font-style: italic;
 }
 
-.no-notifications {
-  padding: 30px 20px;
-  text-align: center;
-  color: #6c757d;
-}
-
 .no-notifications p {
   margin: 0;
-  font-style: italic;
 }
 
 .notification-item {
@@ -170,22 +160,10 @@
   background-color: #fff3e0;
 }
 
-/* Urgency level styling */
-.notification-item.notification-high {
-  border-left-color: #dc3545;
-}
-
-.notification-item.notification-high.unread {
-  background-color: #fff5f5;
-}
-
-.notification-item.notification-medium {
-  border-left-color: #ffc107;
-}
-
-.notification-item.notification-medium.unread {
-  background-color: #fffbf0;
-}
+.notification-item.notification-high { border-left-color: #dc3545; }
+.notification-item.notification-high.unread { background-color: #fff5f5; }
+.notification-item.notification-medium { border-left-color: #ffc107; }
+.notification-item.notification-medium.unread { background-color: #fffbf0; }
 
 .notification-icon {
   font-size: 16px;
@@ -228,82 +206,13 @@
   margin-top: 6px;
 }
 
-/* Responsive design */
-@media (max-width: 768px) {
-  .notification-dropdown {
-    min-width: 280px;
-    right: -10px;
-  }
-  
-  .notification-header {
-    padding: 12px 16px;
-  }
-  
-  .notification-item {
-    padding: 10px 16px;
-  }
-  
-  .bell-icon {
-    width: 18px;
-    height: 18px;
-  }
-  
-  .bell-emoji {
-    font-size: 18px;
-  }
-}
+/* Custom scrollbar */
+.notification-list::-webkit-scrollbar { width: 6px; }
+.notification-list::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
+.notification-list::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 3px; }
+.notification-list::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
 
-@media (max-width: 480px) {
-  .notification-dropdown {
-    min-width: calc(100vw - 40px);
-    max-width: calc(100vw - 40px);
-    right: -20px;
-  }
-  
-  .notification-bell-trigger {
-    width: 36px;
-    height: 36px;
-    padding: 0; /* Ensure no padding on mobile */
-  }
-  
-  .bell-icon {
-    width: 16px;
-    height: 16px;
-  }
-  
-  .bell-emoji {
-    font-size: 16px;
-  }
-  
-  .notification-badge {
-    min-width: 16px;
-    height: 16px;
-    font-size: 9px;
-    top: -3px;
-    right: -3px;
-  }
-}
-
-/* Custom scrollbar for notification list */
-.notification-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.notification-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.notification-list::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-.notification-list::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-/* Special effects for SVG and emoji */
+/* Special effects */
 .notification-bell-trigger:active .bell-icon,
 .notification-bell-trigger:active .bell-emoji {
   transform: scale(0.95);
@@ -316,7 +225,6 @@
   border-radius: 2px;
 }
 
-/* Bell shake animation for notifications */
 .bell-icon.has-notifications,
 .bell-emoji.has-notifications {
   animation: bellShake 0.5s ease-in-out;
@@ -328,87 +236,77 @@
   75% { transform: rotate(10deg); }
 }
 
-/* High contrast mode support */
+/* Accessibility */
 @media (prefers-contrast: high) {
   .notification-bell-trigger {
     border-width: 3px;
     background: rgba(255, 255, 255, 0.3);
   }
-  
-  .bell-icon,
-  .bell-emoji {
+  .bell-icon, .bell-emoji {
     filter: contrast(2);
   }
 }
 
-/* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
-  .bell-icon,
-  .bell-emoji,
-  .notification-bell-trigger,
-  .notification-dropdown {
+  .bell-icon, .bell-emoji, .notification-bell-trigger, .notification-dropdown {
     transition: none;
     animation: none;
   }
 }
 
-/* Hover effects for better visibility */
-.notification-bell-trigger:hover .bell-icon {
-  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.8));
-}
-
-.notification-bell-trigger:hover .bell-emoji {
-  text-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
-}
-
-/* Add this to the existing @media (max-width: 480px) section */
-@media (max-width: 480px) {
-  .notification-dropdown {
-    min-width: calc(100vw - 40px);
-    max-width: calc(100vw - 40px);
-    right: -20px; /* This line already exists */
-    left: auto;
-    transform: translateX(-50%);
-    right: 50%;
-  }
-  
-  /* Add margin to prevent edge touching */
-  .notification-dropdown {
-    margin-left: 20px;
-    margin-right: 20px;
-    right: 20px;
-    left: 20px;
-    width: calc(100vw - 40px);
-    max-width: none;
-    min-width: auto;
-  }
-}
-
-/* Add a new media query for very small screens */
-@media (max-width: 360px) {
-  .notification-dropdown {
-    margin-left: 10px;
-    margin-right: 10px;
-    right: 10px;
-    left: 10px;
-    width: calc(100vw - 20px);
-  }
-}
-
-/* Add better positioning for all mobile sizes */
+/* --- CONSOLIDATED MOBILE & RESPONSIVE STYLES --- */
 @media (max-width: 768px) {
-  .notification-bell-container {
-    position: relative;
-  }
-  
+  /*
+    Use position: fixed to place the dropdown relative to the phone's screen,
+    ensuring it's not constrained by its parent container.
+  */
   .notification-dropdown {
     position: fixed;
-    top: 60px; /* Adjust based on your header height */
-    right: 10px;
+    top: 60px; /* Adjust this value based on your site's header height */
     left: 10px;
-    width: calc(100vw - 20px);
+    right: 10px;
+    width: auto; /* Let left/right dictate the width */
     max-width: none;
-    min-width: auto;
+    min-width: 0;
     z-index: 9999;
+    transform: none; /* Reset any transform properties */
+  }
+
+  .notification-bell-trigger {
+    width: 36px;
+    height: 36px;
+  }
+
+  .bell-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .bell-emoji {
+    font-size: 18px;
+  }
+  
+  .notification-badge {
+    min-width: 16px;
+    height: 16px;
+    font-size: 9px;
+    top: -3px;
+    right: -3px;
+  }
+
+  .notification-header {
+    padding: 12px 16px;
+  }
+  
+  .notification-item {
+    padding: 10px 16px;
+  }
+}
+
+/* Further adjustments for very small screens */
+@media (max-width: 360px) {
+  .notification-dropdown {
+    left: 5px;
+    right: 5px;
   }
 }
