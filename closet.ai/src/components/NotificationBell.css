@@ -360,3 +360,55 @@
 .notification-bell-trigger:hover .bell-emoji {
   text-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
 }
+
+/* Add this to the existing @media (max-width: 480px) section */
+@media (max-width: 480px) {
+  .notification-dropdown {
+    min-width: calc(100vw - 40px);
+    max-width: calc(100vw - 40px);
+    right: -20px; /* This line already exists */
+    left: auto;
+    transform: translateX(-50%);
+    right: 50%;
+  }
+  
+  /* Add margin to prevent edge touching */
+  .notification-dropdown {
+    margin-left: 20px;
+    margin-right: 20px;
+    right: 20px;
+    left: 20px;
+    width: calc(100vw - 40px);
+    max-width: none;
+    min-width: auto;
+  }
+}
+
+/* Add a new media query for very small screens */
+@media (max-width: 360px) {
+  .notification-dropdown {
+    margin-left: 10px;
+    margin-right: 10px;
+    right: 10px;
+    left: 10px;
+    width: calc(100vw - 20px);
+  }
+}
+
+/* Add better positioning for all mobile sizes */
+@media (max-width: 768px) {
+  .notification-bell-container {
+    position: relative;
+  }
+  
+  .notification-dropdown {
+    position: fixed;
+    top: 60px; /* Adjust based on your header height */
+    right: 10px;
+    left: 10px;
+    width: calc(100vw - 20px);
+    max-width: none;
+    min-width: auto;
+    z-index: 9999;
+  }
+}
