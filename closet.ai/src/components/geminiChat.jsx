@@ -125,6 +125,7 @@ function GeminiChat({ ingredients = [], onIngredientsUpdated }) {
       // Pass the desired servings to recipe generation
       const result = await geminiService.getRecipeDetails(recipe, ingredients, temperature, desiredServings);
       
+
       if (result.json && result.json.recipe) {
         // Set recipe data first
         setRecipeData(result.json.recipe);

@@ -71,10 +71,8 @@ const formatIngredientsWithQuantities = (ingredients) => {
 
 // Create a reusable service
 export const geminiService = {
-  // Get recipe suggestions that respect available quantities
   async getRecipeSuggestions(ingredients, mealType, temperature = 0.7) {
     try {
-      // Format ingredients with quantities
       const ingredientsText = formatIngredientsWithQuantities(ingredients);
       
       const prompt = `
@@ -90,8 +88,10 @@ export const geminiService = {
         - Adjust serving sizes based on available ingredient quantities
         
         IMPORTANT: I ONLY want the names of 5 recipes, numbered 1-5. 
-        ONLY provide the recipe names, nothing else. 
-        No introductions, no descriptions, just a simple numbered list of 5 feasible recipes.
+        ONLY provide the recipe names, nothing else.
+        DO NOT include serving sizes, portion counts, or any text like "(serves X)" in the recipe names.
+        Just give me clean recipe names like "Chicken Stir Fry" NOT "Chicken Stir Fry (4 servings)".
+        No introductions, no descriptions, just a simple numbered list of 5 clean recipe names.
       `;
       
       return await this.generateContent(prompt, temperature);
@@ -101,73 +101,79 @@ export const geminiService = {
     }
   },
   
-  // Get detailed recipe instructions with quantity validation
-  async getRecipeDetails(recipe, ingredients, temperature = 0.2, desiredServings = 4) {
-    try {
-      // Format ingredients with quantities
-      const ingredientsText = formatIngredientsWithQuantities(ingredients);
+async getRecipeDetails(recipe, ingredients, temperature = 0.2, desiredServings = 4) {
+  try {
+    // Clean the recipe name of any serving information before using it
+    const cleanRecipeName = recipe
+      .replace(/\s*\(\d+\s*servings?\)/gi, '')
+      .replace(/\s*-\s*serves?\s*\d+/gi, '')
+      .replace(/\s*for\s*\d+\s*servings?/gi, '')
+      .replace(/\s*\(\s*serves?\s*\d+\s*\)/gi, '')
+      .trim();
+    
+    const ingredientsText = formatIngredientsWithQuantities(ingredients);
+    
+    const customPrompt = `
+      I have these ingredients in my kitchen with EXACT quantities:
+      ${ingredientsText}
       
-      const customPrompt = `
-        I have these ingredients in my kitchen with EXACT quantities:
-        ${ingredientsText}
-        
-        Create a recipe for "${recipe}" using ONLY these ingredients with their available quantities.
-        The recipe should be designed for ${desiredServings} servings.
-        
-        CRITICAL CONSTRAINTS:
-        - NEVER use more of any ingredient than what's available
-        - If the standard recipe calls for more than available, adjust the recipe size down
-        - Design the recipe specifically for ${desiredServings} servings
-        - Adjust cooking times, temperatures, and methods appropriately for ${desiredServings} servings
-        - Use realistic quantities that don't exceed what's in my pantry
-        
-        YOU MUST RESPOND WITH VALID JSON ONLY, with no text before or after. Do not include markdown code blocks.
+      Create a recipe for "${cleanRecipeName}" using ONLY these ingredients with their available quantities.
+      The recipe should be designed for ${desiredServings} servings.
+      
+      CRITICAL CONSTRAINTS:
+      - NEVER use more of any ingredient than what's available
+      - If the standard recipe calls for more than available, adjust the recipe size down
+      - Design the recipe specifically for ${desiredServings} servings
+      - Adjust cooking times, temperatures, and methods appropriately for ${desiredServings} servings
+      - Use realistic quantities that don't exceed what's in my pantry
+      
+      YOU MUST RESPOND WITH VALID JSON ONLY, with no text before or after. Do not include markdown code blocks.
 
-        IMPORTANT: The recipe "name" field should be EXACTLY the recipe name without any serving size information. Do not include serving counts, portion information, or any text like "(serves X)" in the recipe name.
+      IMPORTANT: The recipe "name" field should be EXACTLY "${cleanRecipeName}" without any serving size information. Do not include serving counts, portion information, or any text like "(serves X)" in the recipe name.
 
-        The JSON must follow this exact structure:
-        {
-          "recipe": {
-            "name": "${recipe}",
-            "description": "A brief description noting any quantity adjustments",
-            "prepTime": "X minutes",
-            "cookTime": "Y minutes", 
-            "totalTime": "Z minutes",
-            "servings": ${desiredServings},
-            "difficulty": "Easy/Medium/Hard",
-            "ingredients": [
-              {
-                "name": "Ingredient name",
-                "quantity": 1,
-                "unit": "cup",
-                "preparation": "chopped"
-              }
-            ],
-            "instructions": [
-              {
-                "stepNumber": 1,
-                "instruction": "Step instructions adjusted for ${desiredServings} servings",
-                "duration": 5,
-                "tip": "Helpful tip",
-                "ingredients": ["ingredient1", "ingredient2"],
-                "equipment": ["tool1", "tool2"]
-              }
-            ],
-            "tags": ["tag1", "tag2", "tag3"],
-            "actualYield": "Actual servings based on available ingredients"
-          }
+      The JSON must follow this exact structure:
+      {
+        "recipe": {
+          "name": "${cleanRecipeName}",
+          "description": "A brief description noting any quantity adjustments",
+          "prepTime": "X minutes",
+          "cookTime": "Y minutes", 
+          "totalTime": "Z minutes",
+          "servings": ${desiredServings},
+          "difficulty": "Easy/Medium/Hard",
+          "ingredients": [
+            {
+              "name": "Ingredient name",
+              "quantity": 1,
+              "unit": "cup",
+              "preparation": "chopped"
+            }
+          ],
+          "instructions": [
+            {
+              "stepNumber": 1,
+              "instruction": "Step instructions adjusted for ${desiredServings} servings",
+              "duration": 5,
+              "tip": "Helpful tip",
+              "ingredients": ["ingredient1", "ingredient2"],
+              "equipment": ["tool1", "tool2"]
+            }
+          ],
+          "tags": ["tag1", "tag2", "tag3"],
+          "actualYield": "Actual servings based on available ingredients"
         }
-        
-        IMPORTANT FORMATTING REQUIREMENTS:
-        1. Each ingredient must be properly structured with separate name, quantity, unit, and preparation fields
-        2. Do not use any markdown formatting
-        3. The "name" field should only contain the ingredient name
-        4. The "quantity" field should be a number that DOES NOT EXCEED available amounts
-        5. The "unit" field should match or be convertible to available units
-        6. Include "actualYield" field to show adjusted serving size
-        7. Adjust cooking methods, temperatures, and times for ${desiredServings} servings
-        8. Scale ingredient quantities proportionally for ${desiredServings} servings
-      `;
+      }
+      
+      IMPORTANT FORMATTING REQUIREMENTS:
+      1. Each ingredient must be properly structured with separate name, quantity, unit, and preparation fields
+      2. Do not use any markdown formatting
+      3. The "name" field should only contain the ingredient name
+      4. The "quantity" field should be a number that DOES NOT EXCEED available amounts
+      5. The "unit" field should match or be convertible to available units
+      6. Include "actualYield" field to show adjusted serving size
+      7. Adjust cooking methods, temperatures, and times for ${desiredServings} servings
+      8. Scale ingredient quantities proportionally for ${desiredServings} servings
+    `;
       
       console.log("Requesting quantity-aware recipe details for:", recipe, "servings:", desiredServings);
       const result = await this.generateContent(customPrompt, temperature);
