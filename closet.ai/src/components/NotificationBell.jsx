@@ -16,27 +16,6 @@ const NotificationBell = () => {
     fetchNotifications();
   }, []);
 
-  // Add this useEffect after the existing useEffects
-  useEffect(() => {
-    const handleResize = () => {
-      if (showDropdown && window.innerWidth <= 768) {
-        // Force reposition on mobile
-        const dropdown = document.querySelector('.notification-dropdown');
-        if (dropdown) {
-          dropdown.style.position = 'fixed';
-          dropdown.style.left = '10px';
-          dropdown.style.right = '10px';
-          dropdown.style.width = 'calc(100vw - 20px)';
-        }
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    handleResize(); // Call immediately
-
-    return () => window.removeEventListener('resize', handleResize);
-  }, [showDropdown]);
-
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
