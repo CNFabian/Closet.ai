@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { geminiService } from '../services/gemini/gemini';
 import { saveRecipe, validateRecipeIngredients, subtractRecipeIngredients, addHistoryEntry } from '../services/firebase/firestore';
 import './geminiChat.css';
-import { convertToRecipeDisplay, formatConvertedQuantity  } from '../utils/unitConversions';
+import { convertToRecipeDisplay, convertUnits, formatConvertedQuantity } from '../utils/unitConversions';
 import InlineConversionDropdown from './InlineConversionDropdown';
 
 const STEPS = {
